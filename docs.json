@@ -9,9 +9,9 @@
   },
   "contextual": {
     "options": [
-      "copy",
       "chatgpt",
-      "claude"
+      "claude",
+      "copy"
     ]
   },
   "favicon": "/favicon.svg",
