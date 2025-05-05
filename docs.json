@@ -7,6 +7,13 @@
     "light": "#07C983",
     "dark": "#15803D"
   },
+  "contextual": {
+    "options": [
+      "copy",
+      "chatgpt",
+      "claude"
+    ]
+  },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
@@ -48,10 +55,8 @@
           },
           {
             "group": "JotiHunt Admin Endpoints",
-            "pages": [
-              
-            ]
-          } 
+            "pages": []
+          }
         ]
       }
     ],
