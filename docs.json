@@ -31,7 +31,8 @@
           {
             "group": "Guides",
             "pages": [
-              "guides/jotihunt/n8n"
+              "guides/jotihunt/n8n",
+              "guides/jotihunt/discord-bot"
             ]
           }
         ]
@@ -88,20 +89,19 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:devsilkepilon@gmail.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
+      "label": "Request API Key",
       "href": "https://dashboard.mintlify.com"
     }
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/SilkePilon",
+      "linkedin": "https://www.linkedin.com/in/silke-pilon-b42b30268/"
     }
   }
 }

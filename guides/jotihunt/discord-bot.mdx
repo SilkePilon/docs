@@ -1,0 +1,698 @@
+---
+title: 'Discord Integration for Jotihunt'
+description: 'Learn how to integrate Jotihunt with Discord using either a full bot or simple webhooks'
+icon: 'discord'
+---
+
+<Frame>
+  <img src="https://www.gamewijzer.nl/wp-content/uploads/2023/06/Discord.jpg" />
+</Frame>
+
+This guide shows you how to integrate Jotihunt with Discord. There are two approaches, each with its own benefits:
+
+<CardGroup cols={2}>
+  <Card 
+    title="Discord Bot" 
+    icon="robot" 
+    href="#option-1-full-discord-bot">
+    A full-featured bot with interactive commands, real-time updates, and complete control over functionality. Best for teams that need advanced features and can handle hosting.
+  </Card>
+  <Card 
+    title="Webhook Integration" 
+    icon="webhook" 
+    href="#option-2-webhook-based-integration">
+    A simple notification system with no hosting required. Perfect for teams that just need basic updates without interactive features.
+  </Card>
+</CardGroup>
+
+### Feature Comparison
+
+<Note>
+  Choose the integration method that best fits your team's needs and technical capabilities. Below we compare both approaches in detail.
+</Note>
+<Note>
+  Both methods support core features like area status updates and article notifications. The main difference lies in the ability to interact with users and implement custom features.
+</Note>
+
+<Accordion title="Discord Bot">
+
+<Tip>
+  Best for teams that want full control and interactive features
+</Tip>
+
+<Check>
+  - Interactive Commands - Respond to user queries and commands
+  - Real-time Updates - Instant notifications for game events
+  - Rich Formatting - Full Discord embed support
+  - Advanced Features - Custom commands, map generation, statistics
+  - Complete Control - Customize every aspect of the integration
+</Check>
+
+<Warning>
+  - Requires server hosting
+  - More complex setup
+  - Needs ongoing maintenance
+  - Technical knowledge required
+</Warning>
+</Accordion>
+
+<Accordion title="Webhook Integration">
+
+<Tip>
+  Best for teams that want a simple, reliable notification system
+</Tip>
+
+<Check>
+  - Simple Setup - Quick to implement
+  - No Hosting - Works out of the box
+  - Real-time Updates - Instant notifications
+  - Low Maintenance - Set and forget
+  - Basic Formatting - Support for Discord embeds
+</Check>
+
+<Warning>
+  - No interactive features
+  - Limited customization
+  - One-way communication only
+  - Basic feature set
+</Warning>
+</Accordion>
+#### Getting Started
+Now with that out of the way, let's get started with the integration. You can choose between two options:
+
+
+<Accordion title="Option 1: Full Discord Bot">
+## Overview
+
+The Discord bot will help your team stay updated with:
+- 🔔 Real-time notifications for new articles and hints
+- 🗺️ Area status changes and updates 
+- 📊 Team rankings and points
+- 🎯 Photo assignment tracking
+- 🤖 Custom commands for quick info access
+
+## Prerequisites
+
+Before starting, make sure you have:
+
+1. [Node.js](https://nodejs.org/) v16.9.0 or higher installed
+2. A [Discord account](https://discord.com/) and admin access to a server
+3. Basic knowledge of JavaScript/TypeScript
+
+## Creating the Discord Bot
+
+<Steps>
+  <Step title="Create a Discord Application">
+    1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+    2. Click "New Application" and give it a name
+    3. Navigate to the "Bot" section
+    4. Click "Add Bot"
+    5. Copy your bot token (keep this secret!)
+  </Step>
+
+  <Step title="Set Up the Project">
+    Create a new directory and initialize the project:
+
+    ```bash
+    mkdir jotihunt-discord-bot
+    cd jotihunt-discord-bot
+    npm init -y
+    ```
+
+    Install required dependencies:
+
+    ```bash
+    npm install discord.js dotenv node-fetch
+    ```
+  </Step>
+
+  <Step title="Create Basic Bot Structure">
+    Create a new file `bot.js`:
+
+    ```javascript
+    require('dotenv').config();
+    const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+
+    const client = new Client({ 
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+      ]
+    });
+
+    client.once('ready', () => {
+      console.log('Bot is ready!');
+    });
+
+    client.login(process.env.DISCORD_TOKEN);
+    ```
+
+    Create a `.env` file:
+
+    ```env
+    DISCORD_TOKEN=your_bot_token_here
+    NOTIFICATION_CHANNEL=your_channel_id
+    ```
+  </Step>
+</Steps>
+
+## Implementing Core Features
+
+### Area Status Monitor
+
+This feature checks for area status changes and sends notifications to a designated channel.
+
+```javascript
+const JOTIHUNT_API = 'https://jotihunt.nl/api/2.0';
+let lastAreaStates = new Map();
+
+async function checkAreaUpdates() {
+  try {
+    const response = await fetch(`${JOTIHUNT_API}/areas`);
+    const data = await response.json();
+
+    for (const area of data.data) {
+      const lastStatus = lastAreaStates.get(area.name);
+      
+      if (lastStatus && lastStatus !== area.status) {
+        const embed = new EmbedBuilder()
+          .setTitle(`🔄 Area Status Change: ${area.name}`)
+          .setColor(area.status === 'red' ? '#ff0000' : 
+                   area.status === 'orange' ? '#ffa500' : '#00ff00')
+          .setDescription(`Status changed from ${lastStatus} to ${area.status}`)
+          .setFooter({ text: `Last updated: ${new Date(area.updated_at).toLocaleString()}` });
+
+        const channel = client.channels.cache.get(process.env.NOTIFICATION_CHANNEL);
+        await channel.send({ embeds: [embed] });
+      }
+      
+      lastAreaStates.set(area.name, area.status);
+    }
+  } catch (error) {
+    console.error('Error checking area updates:', error);
+  }
+}
+
+// Check every 30 seconds
+setInterval(checkAreaUpdates, 30000);
+```
+
+### Article Notifications
+
+Monitor and notify about new articles and hints:
+
+```javascript
+let lastArticleId = null;
+
+async function checkNewArticles() {
+  try {
+    const response = await fetch(`${JOTIHUNT_API}/articles`);
+    const data = await response.json();
+    
+    if (!data.data.length) return;
+    
+    const latestArticle = data.data[0];
+    
+    if (lastArticleId !== null && lastArticleId !== latestArticle.id) {
+      const embed = new EmbedBuilder()
+        .setTitle(`📰 New Article: ${latestArticle.title}`)
+        .setDescription(latestArticle.summary || 'No summary available')
+        .setURL(`https://jotihunt.nl/article/${latestArticle.id}`)
+        .setTimestamp(new Date(latestArticle.published_at));
+
+      const channel = client.channels.cache.get(process.env.NOTIFICATION_CHANNEL);
+      await channel.send({ embeds: [embed] });
+    }
+    
+    lastArticleId = latestArticle.id;
+  } catch (error) {
+    console.error('Error checking articles:', error);
+  }
+}
+
+// Check every minute
+setInterval(checkNewArticles, 60000);
+```
+
+### Team Information Commands
+
+Add slash commands to query team information:
+
+```javascript
+const { SlashCommandBuilder } = require('@discordjs/builders');
+
+const commands = [
+  new SlashCommandBuilder()
+    .setName('team')
+    .setDescription('Get information about a team')
+    .addStringOption(option =>
+      option.setName('name')
+        .setDescription('Team name to search for')
+        .setRequired(true)),
+  new SlashCommandBuilder()
+    .setName('areas')
+    .setDescription('Get current status of all areas'),
+].map(command => command.toJSON());
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  if (commandName === 'team') {
+    const teamName = interaction.options.getString('name');
+    
+    try {
+      const response = await fetch(`${JOTIHUNT_API}/subscriptions`);
+      const data = await response.json();
+      
+      const team = data.data.find(t => 
+        t.name.toLowerCase().includes(teamName.toLowerCase())
+      );
+      
+      if (!team) {
+        await interaction.reply('Team not found!');
+        return;
+      }
+      
+      const embed = new EmbedBuilder()
+        .setTitle(`Team: ${team.name}`)
+        .addFields([
+          { name: 'Location', value: `${team.city} (${team.postcode})` },
+          { name: 'Area', value: team.area || 'Not assigned' },
+          { name: 'Photo Points', value: team.photo_assignment_points?.toString() || '0' }
+        ]);
+      
+      await interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      await interaction.reply('Error fetching team information!');
+    }
+  }
+});
+```
+
+## Advanced Features
+
+### Area Status Map
+
+Create a dynamic map showing area statuses:
+
+```javascript
+const Canvas = require('canvas');
+
+async function generateAreaMap() {
+  const canvas = Canvas.createCanvas(800, 600);
+  const ctx = canvas.getContext('2d');
+  
+  // Load background map image
+  const background = await Canvas.loadImage('map.png');
+  ctx.drawImage(background, 0, 0, 800, 600);
+  
+  // Draw area overlays
+  const areas = await fetch(`${JOTIHUNT_API}/areas`).then(r => r.json());
+  
+  for (const area of areas.data) {
+    // Add colored overlay for each area
+    ctx.fillStyle = area.status === 'red' ? 'rgba(255,0,0,0.3)' :
+                   area.status === 'orange' ? 'rgba(255,165,0,0.3)' :
+                   'rgba(0,255,0,0.3)';
+    // Draw area polygon (coordinates would need to be defined)
+    // ctx.fill();
+  }
+  
+  return canvas.toBuffer();
+}
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand()) return;
+  
+  if (interaction.commandName === 'map') {
+    const mapBuffer = await generateAreaMap();
+    await interaction.reply({ files: [{ attachment: mapBuffer, name: 'map.png' }] });
+  }
+});
+```
+
+### Point Tracking System
+
+Track and display team points:
+
+```javascript
+class PointTracker {
+  constructor() {
+    this.points = new Map();
+  }
+  
+  async updatePoints() {
+    const response = await fetch(`${JOTIHUNT_API}/subscriptions`);
+    const data = await response.json();
+    
+    for (const team of data.data) {
+      this.points.set(team.name, {
+        photo: team.photo_assignment_points || 0,
+        total: this.calculateTotalPoints(team)
+      });
+    }
+  }
+  
+  getLeaderboard() {
+    return Array.from(this.points.entries())
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10);
+  }
+}
+
+const pointTracker = new PointTracker();
+
+// Update points every 5 minutes
+setInterval(() => pointTracker.updatePoints(), 300000);
+```
+
+## Error Handling and Rate Limiting
+
+Implement proper error handling and respect API rate limits:
+
+```javascript
+class RateLimiter {
+  constructor(maxRequests = 30, timeWindow = 60000) {
+    this.requests = [];
+    this.maxRequests = maxRequests;
+    this.timeWindow = timeWindow;
+  }
+  
+  async checkLimit() {
+    const now = Date.now();
+    this.requests = this.requests.filter(time => now - time < this.timeWindow);
+    
+    if (this.requests.length >= this.maxRequests) {
+      const oldestRequest = this.requests[0];
+      const waitTime = this.timeWindow - (now - oldestRequest);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.requests.push(now);
+  }
+}
+
+const rateLimiter = new RateLimiter();
+
+async function fetchWithRateLimit(url) {
+  await rateLimiter.checkLimit();
+  
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
+  }
+}
+```
+
+## Testing
+
+Here's how to test your bot's functionality:
+
+```javascript
+async function runTests() {
+  console.log('Running bot tests...');
+  
+  // Test area status monitoring
+  try {
+    await checkAreaUpdates();
+    console.log('✅ Area status check passed');
+  } catch (error) {
+    console.error('❌ Area status check failed:', error);
+  }
+  
+  // Test article notifications
+  try {
+    await checkNewArticles();
+    console.log('✅ Article check passed');
+  } catch (error) {
+    console.error('❌ Article check failed:', error);
+  }
+  
+  // Test rate limiting
+  try {
+    const limiter = new RateLimiter(2, 1000);
+    await limiter.checkLimit();
+    await limiter.checkLimit();
+    console.log('✅ Rate limiting passed');
+  } catch (error) {
+    console.error('❌ Rate limiting failed:', error);
+  }
+}
+
+// Run tests when starting the bot in test mode
+if (process.env.NODE_ENV === 'test') {
+  runTests();
+}
+```
+
+## Deployment
+
+To deploy your bot:
+
+1. Set up a server (e.g., DigitalOcean, Heroku)
+2. Configure environment variables
+3. Set up process management (PM2)
+4. Enable logging and monitoring
+
+Example PM2 configuration (`ecosystem.config.js`):
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'jotihunt-bot',
+    script: 'bot.js',
+    watch: true,
+    env: {
+      NODE_ENV: 'production',
+      DISCORD_TOKEN: 'your_token_here',
+      NOTIFICATION_CHANNEL: 'your_channel_id'
+    }
+  }]
+};
+```
+
+<Warning>
+  Never commit your `.env` file or expose your bot token. Always use environment variables for sensitive information.
+</Warning>
+
+## Useful Commands
+
+Here's a list of available bot commands:
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/team` | Get team information | `/team ScoutingXYZ` |
+| `/areas` | Show all area statuses | `/areas` |
+| `/map` | Display area status map | `/map` |
+| `/points` | Show team rankings | `/points` |
+| `/subscribe` | Subscribe to notifications | `/subscribe articles` |
+| `/help` | List available commands | `/help` |
+
+## Troubleshooting
+
+Common issues and solutions:
+
+<Accordion title="Bot not responding to commands">
+  - Check if the bot is online
+  - Verify bot permissions
+  - Ensure slash commands are registered
+  - Check error logs
+</Accordion>
+
+<Accordion title="Rate limit errors">
+  - Implement proper rate limiting
+  - Reduce update check frequency
+  - Cache responses when possible
+</Accordion>
+
+<Accordion title="Missing notifications">
+  - Verify channel IDs
+  - Check bot permissions
+  - Ensure WebSocket connection is stable
+</Accordion>
+
+## Additional Resources
+
+- [Discord.js Documentation](https://discord.js.org/)
+- [Jotihunt API Documentation](/api-reference/jotihunt/introduction)
+- [Discord Developer Portal](https://discord.com/developers/docs)
+- [Node.js Best Practices](https://nodejs.org/en/docs/guides/nodejs-docker-webapp)
+
+<Note>
+  Remember to regularly update your bot's dependencies and keep an eye on the Jotihunt API for any changes or updates.
+</Note>
+</Accordion>
+
+<Accordion title="Option 2: Webhook-based Integration">
+
+If you don't need interactive features, a webhook-based integration is simpler to set up and requires no hosting.
+
+## Features
+
+- 📢 Automatic notifications for new articles and hints
+- 🚦 Area status change alerts
+- 📱 No server hosting required
+- ⚡ Quick setup process
+
+## Setting Up Discord Webhook
+
+1. In your Discord server, go to Server Settings > Integrations
+2. Click "Create Webhook"
+3. Give it a name (e.g., "Jotihunt Updates")
+4. Choose the channel for notifications
+5. Copy the webhook URL (keep it secret!)
+
+## Implementation
+
+Create a new file `webhook.js`:
+
+```javascript
+require('dotenv').config();
+const fetch = require('node-fetch');
+
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const JOTIHUNT_API = 'https://jotihunt.nl/api/2.0';
+
+// Track last seen states
+let lastArticleId = null;
+let lastAreaStates = new Map();
+
+async function sendWebhook(data) {
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch (error) {
+    console.error('Error sending webhook:', error);
+  }
+}
+
+async function checkArticles() {
+  try {
+    const response = await fetch(`${JOTIHUNT_API}/articles`);
+    const data = await response.json();
+    
+    if (!data.data.length) return;
+    
+    const latest = data.data[0];
+    if (lastArticleId !== null && lastArticleId !== latest.id) {
+      await sendWebhook({
+        embeds: [{
+          title: `📰 New Article: ${latest.title}`,
+          description: latest.summary || 'No summary available',
+          url: `https://jotihunt.nl/article/${latest.id}`,
+          color: 3447003,
+          timestamp: new Date().toISOString()
+        }]
+      });
+    }
+    lastArticleId = latest.id;
+  } catch (error) {
+    console.error('Error checking articles:', error);
+  }
+}
+
+async function checkAreas() {
+  try {
+    const response = await fetch(`${JOTIHUNT_API}/areas`);
+    const data = await response.json();
+
+    for (const area of data.data) {
+      const lastStatus = lastAreaStates.get(area.name);
+      if (lastStatus && lastStatus !== area.status) {
+        await sendWebhook({
+          embeds: [{
+            title: `🔄 Area Status Change: ${area.name}`,
+            description: `Status changed from ${lastStatus} to ${area.status}`,
+            color: area.status === 'red' ? 15158332 : 
+                   area.status === 'orange' ? 15105570 : 3066993,
+            timestamp: new Date().toISOString()
+          }]
+        });
+      }
+      lastAreaStates.set(area.name, area.status);
+    }
+  } catch (error) {
+    console.error('Error checking areas:', error);
+  }
+}
+
+// Run checks periodically
+setInterval(checkArticles, 60000); // Every minute
+setInterval(checkAreas, 30000);    // Every 30 seconds
+```
+
+Create a `.env` file:
+
+```env
+DISCORD_WEBHOOK_URL=your_webhook_url_here
+```
+
+Install dependencies and run:
+
+```bash
+npm init -y
+npm install dotenv node-fetch
+node webhook.js
+```
+
+<Note>
+  The webhook-based approach is perfect for teams that just need notifications without interactive features. It's easier to set up and maintain.
+</Note>
+
+## Comparison of Approaches
+
+Here's a detailed comparison to help you choose:
+
+### Discord Bot
+✅ **Pros**:
+- Interactive commands
+- Rich feature set
+- Complete control over behavior
+- Can respond to user queries
+
+❌ **Cons**:
+- Requires hosting
+- More complex setup
+- Ongoing maintenance
+- More development time
+
+### Webhook Integration
+✅ **Pros**:
+- Simple setup
+- No hosting required
+- Less maintenance
+- Quick to implement
+
+❌ **Cons**:
+- No interactive features
+- Limited to one-way communication
+- Basic customization only
+- Can't respond to queries
+
+Choose the webhook approach if:
+- You only need notifications
+- You don't want to manage a server
+- You need a quick solution
+- Your team doesn't need interactive features
+
+Choose the bot approach if:
+- You need interactive commands
+- You want complete control
+- You can manage hosting
+- Your team needs advanced features
+
+</Accordion>
