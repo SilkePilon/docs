@@ -1,33 +1,145 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'Jotihunt API Documentation'
+description: 'API reference for the Jotihunt scouting game platform'
 ---
 
+# Jotihunt API
+
+Welcome to the Jotihunt API documentation. This API provides access to data for the Jotihunt scouting game in the Netherlands, including team subscriptions, area statuses, and game articles.
+
+## API Overview
+
+The Jotihunt API follows RESTful principles and provides data in JSON format. The base URL for all API requests is:
+
+```
+https://jotihunt.nl/api/2.0
+```
+
+The API is organized around three main resources:
+
+<CardGroup cols={3}>
+  <Card
+    title="Subscriptions"
+    icon="users"
+    href="/api-reference/subscriptions"
+  >
+    Access information about participating scouting groups
+  </Card>
+  <Card
+    title="Areas"
+    icon="map"
+    href="/api-reference/areas"
+  >
+    Get status of hunting areas (Alpha through Foxtrot)
+  </Card>
+  <Card
+    title="Articles"
+    icon="newspaper"
+    href="/api-reference/articles"
+  >
+    Retrieve game announcements, hints, and assignments
+  </Card>
+</CardGroup>
+
+## Authentication
+
+All API endpoints are authenticated using Bearer tokens.
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" https://jotihunt.nl/api/2.0/subscriptions
+```
+
 <Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
+  You'll need to register for a Jotihunt account and request API access to receive your authentication token.
 </Note>
 
-## Welcome
+## Response Format
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+All API responses follow a standard format:
+
+### Single Resource Collections
+
+Most endpoints return a collection of resources in a `data` array:
+
+```json
+{
+  "data": [
+    {
+      // Resource objects
+    }
+  ]
+}
+```
+
+### Paginated Resources
+
+For the `/articles` endpoint, responses include pagination information:
+
+```json
+{
+  "data": [
+    {
+      // Article objects
+    }
+  ],
+  "links": {
+    "first": "https://jotihunt.nl/api/2.0/articles?page=1",
+    "last": "https://jotihunt.nl/api/2.0/articles?page=5",
+    "prev": null,
+    "next": "https://jotihunt.nl/api/2.0/articles?page=2"
+  },
+  "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 5,
+    "links": [
+      // Pagination links
+    ],
+    "path": "https://jotihunt.nl/api/2.0/articles",
+    "per_page": 15,
+    "to": 15,
+    "total": 75
+  }
+}
+```
+
+## OpenAPI Specification
+
+Our API is documented using the OpenAPI 3.1.0 specification format. You can view or download the complete specification file for integration with API tools.
 
 <Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
+  title="Jotihunt API Specification"
+  icon="file-code"
+  href="/api-reference/openapi.json"
 >
   View the OpenAPI specification file
 </Card>
 
-## Authentication
+## Rate Limiting
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+The API implements rate limiting to ensure fair usage. Each client is limited to 60 requests per minute. If you exceed this limit, you'll receive a `429 Too Many Requests` response.
+
+## Error Handling
+
+The API uses standard HTTP status codes to indicate success or failure:
+
+- `200 OK`: Request succeeded
+- `400 Bad Request`: Invalid request parameters
+- `401 Unauthorized`: Missing or invalid authentication
+- `403 Forbidden`: Valid authentication but insufficient permissions
+- `404 Not Found`: Resource not found
+- `429 Too Many Requests`: Rate limit exceeded
+- `500 Server Error`: Unexpected server error
+
+Error responses include additional details:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+{
+  "error": 400,
+  "message": "Invalid request parameters"
+}
 ```
+
+## API Endpoints
+
+Let's explore the available endpoints in more detail:
