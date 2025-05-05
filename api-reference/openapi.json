@@ -1,5 +1,8 @@
 {
   "openapi": "3.1.0",
+  "x-mcp": {
+    "enabled": true
+  },
   "info": {
     "title": "Jotihunt API",
     "description": "API for Jotihunt, a scouting game in the Netherlands that provides information about subscriptions, areas, and articles.",
