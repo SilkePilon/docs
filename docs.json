@@ -40,15 +40,15 @@
           {
             "group": "API Documentation",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/jotihunt/introduction"
             ]
           },
           {
             "group": "JotiHunt Public Endpoints",
             "pages": [
-              "api-reference/endpoint/get-subscriptions",
-              "api-reference/endpoint/get-areas",
-              "api-reference/endpoint/get-articles"
+              "api-reference/endpoint/jotihunt-public/get-subscriptions",
+              "api-reference/endpoint/jotihunt-public/get-areas",
+              "api-reference/endpoint/jotihunt-public/get-articles"
             ]
           },
           {
