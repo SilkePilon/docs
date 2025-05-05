@@ -27,6 +27,384 @@ Before you begin, ensure you have:
 3. Basic understanding of HTTP requests and JSON
 4. Access to your team's communication tools (optional)
 
+## Pre-build Workflow example
+<Accordion description="This is an example of a pre-build workflow. You can use this to get started quickly.">
+    <Tip>
+      This workflow automatically:
+      1. Checks for new content from the Jotihunt API every 10 minutes
+      2. Uses Google Gemini AI to analyze hints, assignments, and news
+      3. Creates appropriate tasks in ClickUp based on content type
+      4. Sends formatted notifications to Google Chat
+
+      You're not limited to ClickUp and Google Chat - you can substitute these with Slack, Discord, Trello, Asana, or any other tool n8n supports. Just remember to update the system prompt and node configurations to reflect your chosen tools.
+    </Tip>
+    <Note>You can copy and paste the following json into your n8n workspace</Note>
+
+   ```json example1.json
+    {
+  "name": "JotiHunt 2025",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f2615f3d-6b10-4782-b3fd-4248edb01b66",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://jotihunt.nl/api/2.0/articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "a355a01f-2faf-4dcc-95fb-14aa1e53dfd4",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=New {{ $json.data[0].type }}\n\nTitle: {{ $json.data[0].title }}\nPublish at: {{ $json.data[0].publish_at }}\nContent: {{ $json.data[0].message.content }}\nLinks {{ $json.links.toJsonString() || \"\" }}\n",
+        "options": {
+          "systemMessage": "=You are an advanced Jotihunt Intelligence Assistant designed to analyze and process incoming assignments (opdrachten), hints, and news updates for the Jotihunt live game. Your primary function is to prepare comprehensive, actionable reports for team members via Google Chat and create organized tasks in Clickup for actionable items.\n\n## ABOUT JOTIHUNT:\nJotihunt is an annual interactive fox hunt for Dutch scouting groups in Gelderland, organized by volunteers. Teams (\"hunters\") track fox teams (groups of three people) moving throughout Gelderland. Fox locations are revealed through cryptic hints on the game website. Participating scout groups must decipher these hints to determine the location and walking route of fox teams to successfully \"hunt\" them. Fox teams move within Gelderland with the goal of placing counter-hunts against participating groups. Besides solving hints and hunting foxes, scouting groups complete assigned tasks. Successfully solved hints and completed tasks earn points. The scouting group with the most points after 26 hours wins Jotihunt.\n\n## YOUR RESPONSIBILITIES:\nWhen receiving new information, you will first categorize it as one of three types:\n- HINT: Clues about fox team locations that need deciphering\n- OPDRACHT (ASSIGNMENT): Tasks the team must complete to earn points\n- NEWS: General game updates, rule changes, announcements, or other information\n\nFor each type of incoming information, you will:\n\n1. ANALYZE THE CONTENT:\n   - Identify the type (Hint/Opdracht/News)\n   - Determine urgency level (Critical/High/Medium/Low)\n   - Extract key information, deadlines, and requirements\n\n2. SEND DETAILED GOOGLE CHAT MESSAGE USING THE GOOGLE CHAT TOOL:\n\n   FOR HINTS:\n   - **SUMMARY**: Clear, concise overview of the hint\n   - **DETAILED BREAKDOWN**: Thorough explanation with all available information\n   - **POTENTIAL INTERPRETATIONS**: Provide 3-5 possible interpretations\n   - **INITIAL ANALYSIS**: Your preliminary thoughts on solving the puzzle\n   - **SUGGESTED APPROACH**: Step-by-step methodology to tackle the hint:\n      * Research steps\n      * Decoding techniques if encoded\n      * Resources needed\n      * Verification methods\n   - **TIME ESTIMATES**: Projected time required for solution\n   - **GEOGRAPHICAL CONSIDERATIONS**: Relevant Gelderland areas to consider\n   - **PERSONNEL RECOMMENDATIONS**: Suggested team members based on required skills\n   - **CROSS-REFERENCES**: Connections to previous hints if applicable\n\n   FOR OPDRACHTEN (ASSIGNMENTS):\n   - **SUMMARY**: Clear, concise overview of the assignment\n   - **REQUIREMENTS**: Detailed breakdown of what must be accomplished\n   - **DEADLINE**: When the assignment must be completed by\n   - **RESOURCES NEEDED**: Materials, skills, or information required\n   - **SUGGESTED APPROACH**: Step-by-step methodology to complete the assignment\n   - **TIME ESTIMATES**: Projected time required for completion\n   - **PERSONNEL RECOMMENDATIONS**: Suggested team members based on required skills\n   - **POTENTIAL CHALLENGES**: Anticipated difficulties and how to overcome them\n\n   FOR NEWS:\n   - **SUMMARY**: Clear, concise overview of the news\n   - **IMPLICATIONS**: How this news affects the team's strategy or gameplay\n   - **ACTION ITEMS**: Any immediate actions needed in response\n   - **FUTURE CONSIDERATIONS**: How this might impact upcoming game elements\n   - **CROSS-REFERENCES**: How this relates to previous information or game elements\n\n3. CREATE CLICKUP TASK (ONLY FOR HINTS AND OPDRACHTEN):\n   - Generate structured task data for the team's Clickup system only for hints and assignments\n   - Do NOT create Clickup tasks for news updates\n   - Include all relevant details formatted appropriately for task management\n   - Tag with appropriate type (Hint/Opdracht) for easy filtering\n\nWhen communicating via Google Chat, maintain a tone that is urgent but clear, detailed but actionable, and always focused on maximizing the team's chance of success in the Jotihunt competition."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        872,
+        0
+      ],
+      "id": "cd9bad36-c1fe-4e68-b105-0be8035c5443",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-04-17",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        660,
+        220
+      ],
+      "id": "5879fcaf-a91b-49ad-8e06-2f98fb5c280a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TUvLCeakEJqhRdb1",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=2344332",
+        "contextWindowLength": 35
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        780,
+        220
+      ],
+      "id": "ec61095c-3a1c-4bf6-949e-58dbab4889a7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2dfc29a4-cc12-46b0-b4a9-81b06c8c9c39",
+              "leftValue": "={{ $json.data[0].type }}",
+              "rightValue": "news",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "41664fc3-68ac-4b9f-85ce-46bf52136c5e",
+      "name": "If",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create an new task for assingments (opdracht)",
+        "authentication": "oAuth2",
+        "team": "90151019105",
+        "space": "90154414165",
+        "folderless": true,
+        "list": "901510698129",
+        "name": "=Opdracht: {{ $json.data[0].title }}",
+        "additionalFields": {
+          "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Content', ``, 'string') }}",
+          "dueDateTime": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Due_Date_Time', ``, 'boolean') }}",
+          "priority": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Priority', ``, 'number') }}",
+          "timeEstimate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Time_Estimate', ``, 'number') }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        900,
+        220
+      ],
+      "id": "37809fa1-57e7-4c64-b0ae-d2a4697da6a9",
+      "name": "ClickUp opdracht",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "l5cnmNjb3PIiXquH",
+          "name": "ClickUp account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create an new task for assingments (opdracht)",
+        "authentication": "oAuth2",
+        "team": "90151019105",
+        "space": "90154414165",
+        "folderless": true,
+        "list": "901510698275",
+        "name": "=Hint: {{ $json.data[0].title }}",
+        "additionalFields": {
+          "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Content', ``, 'string') }}",
+          "dueDateTime": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Due_Date_Time', ``, 'boolean') }}",
+          "priority": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Priority', ``, 'number') }}",
+          "timeEstimate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Time_Estimate', ``, 'number') }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        220
+      ],
+      "id": "30f1280a-9a5a-40a1-9842-cbb8b635556d",
+      "name": "ClickUp hint",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "l5cnmNjb3PIiXquH",
+          "name": "ClickUp account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "update",
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Task_ID', ``, 'string') }}",
+        "updateFields": {
+          "addAssignees": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Add_Assignees', ``, 'string') }}",
+          "content": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Content', ``, 'string') }}",
+          "priority": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Priority', ``, 'number') }}",
+          "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+          "timeEstimate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Time_Estimate', ``, 'number') }}"
+        }
+      },
+      "type": "n8n-nodes-base.clickUpTool",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        220
+      ],
+      "id": "813297dd-6310-44c3-afc4-1400a5c74d37",
+      "name": "ClickUp update task",
+      "credentials": {
+        "clickUpOAuth2Api": {
+          "id": "l5cnmNjb3PIiXquH",
+          "name": "ClickUp account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "spaceId": "=JotiHunt 2025",
+        "messageUi": {
+          "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Text', ``, 'string') }}"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleChatTool",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        220
+      ],
+      "id": "106100b1-b737-4339-abf6-0e2920a099c4",
+      "name": "Google Chat1",
+      "webhookId": "c40be85a-2bba-427b-bfc9-000e03a058fc",
+      "credentials": {
+        "googleApi": {
+          "id": "ziyc1BkunuOHv8ze",
+          "name": "Chat account Silke"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp opdracht": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp hint": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp update task": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Google Chat1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Amsterdam",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "84f6a860-e24c-485b-8e6c-b0108969719e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d8dbcaa25fb3299ceca5d6cdb341ce3d9ac5aff0ef15590c3a9c4f4ba7a67307"
+  },
+  "id": "t6aQq7Dre4sodaz0",
+  "tags": []
+}
+  ```
+</Accordion>
+
 ## Setting Up Your First n8n Workflow
 
 <Steps>
