@@ -23,10 +23,10 @@ With this forwarder, you can:
 
 Before you begin, ensure you have:
 
-1. Node.js installed (version 16.x or higher)
+1. Node.js installed (version 18.x or higher)
 2. A Telegram account and API credentials
-3. Discord bot token and channel ID (for Discord forwarding)
-4. Basic understanding of async/await and event handling
+3. Discord bot token and channel ID (optional, for Discord forwarding)
+4. WhatsApp group name (optional, for WhatsApp forwarding)
 
 ## Setting Up Your Telegram Forwarder
 
@@ -39,29 +39,51 @@ Before you begin, ensure you have:
     cd jotihunt-forwarder
     npm init -y
     ```
-      Install the required dependencies:
-      ```bash
-    npm install telegram@latest discord.js@latest whatsapp-web.js@latest dotenv@latest qrcode-terminal@latest puppeteer@latest
+    
+    Install the required dependencies:
+    ```bash
+    npm install telegram discord.js whatsapp-web.js dotenv qrcode-terminal
     ```
   </Step>
   
   <Step title="Set up environment variables">
-    Create a `.env` file in your project root:
+    Create a `.env` file in your project root. Here's how to get each required value:
+
+    **Telegram API Credentials:**
+    1. Visit [my.telegram.org/apps](https://my.telegram.org/apps)
+    2. Log in with your phone number
+    3. Create a new application if you don't have one
+    4. Copy the `api_id` and `api_hash` values
+
+    **Discord Bot Setup:**
+    1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+    2. Click "New Application" and name it
+    3. Go to the "Bot" section and create a bot
+    4. Copy the bot token
+    5. Enable "Message Content Intent" under Privileged Gateway Intents
+    6. To get the channel ID, enable Developer Mode in Discord (Settings > App Settings > Advanced)
+    7. Right-click the target channel and click "Copy ID"
+
+    **WhatsApp Group Setup:**
+    1. Note the exact name of your WhatsApp group (case sensitive)
+    2. You must be a member of the group you want to forward messages to
+    3. Make sure to keep your WhatsApp connected on your phone while using the forwarder
+
+    Add these values to your `.env` file:
     
     ```env .env
-    # Telegram credentials
-    TELEGRAM_API_ID=your_api_id              # Get from https://my.telegram.org/apps
-    TELEGRAM_API_HASH=your_api_hash          # Get from https://my.telegram.org/apps
-    TELEGRAM_SESSION_STRING=''                # Will be auto-generated on first run
-    TELEGRAM_BOT_USERNAME=@Jotihunt_bot      # The bot username to listen to
-    
-    # Discord credentials
-    DISCORD_BOT_TOKEN=your_discord_bot_token        # Get from Discord Developer Portal
-    DISCORD_CHANNEL_ID=your_discord_channel_id      # Right-click channel > Copy ID
-    
-    # WhatsApp configuration (optional)
-    WHATSAPP_GROUP_ID=your_whatsapp_group_id        # This will be shown after scanning QR
-    WHATSAPP_SESSION_PATH=./whatsapp-session        # Where to store session data
+    # Telegram API credentials
+    TELEGRAM_API_ID=123456                      # From my.telegram.org/apps
+    TELEGRAM_API_HASH=abcdef123456abcdef12      # From my.telegram.org/apps
+    TELEGRAM_STRING_SESSION=                    # Leave empty, will be generated on first run
+    TELEGRAM_CHAT_USERNAME=@Jotihunt_bot        # The Jotihunt bot username (@Jotihunt_bot)
+
+    # Discord Bot credentials (optional)
+    DISCORD_TOKEN=your_discord_bot_token        # From Discord Developer Portal
+    DISCORD_CHANNEL_ID=123456789012345678       # Right-click channel > Copy ID
+
+    # WhatsApp Configuration (optional)
+    WHATSAPP_GROUP_NAME=My Group Name           # Exact group name, case sensitive
     ```
     
     <Warning>
@@ -70,204 +92,198 @@ Before you begin, ensure you have:
   </Step>
   
   <Step title="Create the forwarder code">
-    Create a new file called `index.js`:
-      ```javascript index.js
-    require('dotenv').config();
-    const { TelegramClient } = require('telegram');
-    const { StringSession } = require('telegram/sessions');
-    const { NewMessage } = require('telegram/events');
-    const { Client, GatewayIntentBits } = require('discord.js');
-    const { Client: WhatsAppClient } = require('whatsapp-web.js');
-    const { LocalAuth } = require('whatsapp-web.js');
-    const qrcode = require('qrcode-terminal');
+    Create a new file called `index.js` in your project root and add the following code: 
     
-    // Initialize Telegram client
-    const telegram = new TelegramClient(
-      new StringSession(process.env.TELEGRAM_SESSION_STRING || ''),
-      parseInt(process.env.TELEGRAM_API_ID),
-      process.env.TELEGRAM_API_HASH,
-      { connectionRetries: 5 }
-    );
-    
-    // Initialize Discord client
-    const discord = new Client({ 
-      intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-      ]
-    });
-      // Initialize WhatsApp client
-    const whatsapp = new WhatsAppClient({
-        authStrategy: new LocalAuth({
-            clientId: 'jotihunt-forwarder',
-            dataPath: process.env.WHATSAPP_SESSION_PATH
-        }),
-        puppeteer: {
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu'
-            ]
-        },
-        qrMaxRetries: 3,
-    });
-      // Function to convert Telegram formatting to Discord/WhatsApp
-    function convertFormatting(message) {
-      let text = message.text || message.message;
-      const entities = message.entities || [];
-      
-      // Sort entities in reverse order to preserve offsets
-      entities.sort((a, b) => b.offset - a.offset);
-      
-      for (const entity of entities) {
-        const start = entity.offset;
-        const end = entity.offset + entity.length;
-        
-        if (entity.className === 'MessageEntityBold') {
-          // Wrap the text with ** for bold (works in both Discord and WhatsApp)
-          text = text.slice(0, start) + 
-            '**' + text.slice(start, end) + '**' + 
-            text.slice(end);
-        }
-      }
-      
-      return text;
-    }
-    
-    // Handle Telegram messages
-    async function setupTelegramHandler() {
-      telegram.addEventHandler(async (event) => {
-        const message = event.message;
-        
-        // Only process messages from Jotihunt bot
-        if (!message || message.senderId?.username !== process.env.TELEGRAM_BOT_USERNAME) {
-          return;
-        }
-        
-        console.log('Telegram: Received message:', message.text);
-        
-        const formattedMessage = convertFormatting(message);
-        
-        // Forward to Discord if configured
-        if (process.env.DISCORD_CHANNEL_ID) {
-          const channel = await discord.channels.fetch(
-            process.env.DISCORD_CHANNEL_ID
-          );
-          if (channel) {
-            await channel.send(formattedMessage);
-            console.log('Discord: Message forwarded successfully');
-          }
-        }
-          // Forward to WhatsApp if configured
-        if (process.env.WHATSAPP_GROUP_ID) {
-          try {
-            const chat = await whatsapp.getChatById(
-              process.env.WHATSAPP_GROUP_ID
-            );
-            if (chat) {
-              await chat.sendMessage(formattedMessage, {
-                sendSeen: false,
-                quoteFails: false,
-                linkPreview: true
-              });
-              console.log('WhatsApp: Message forwarded successfully');
-            }
-          } catch (error) {
-            console.error('WhatsApp: Failed to forward message:', error);
-          }
-        }
-      }, new NewMessage({
-        fromUsers: [process.env.TELEGRAM_BOT_USERNAME]
-      }));
-    }
-      // Set up event handlers for all clients
-    discord.once('ready', () => {
-      console.log('Discord: Logged in as', discord.user.tag);
-    });
-      // WhatsApp event handlers
-    whatsapp.on('qr', (qr) => {
-      console.log('WhatsApp: Scan this QR code with WhatsApp to log in:');
-      qrcode.generate(qr, { small: true });
-    });
-    
-    whatsapp.on('ready', () => {
-      console.log('WhatsApp: Client is ready!');
-    });
-    
-    whatsapp.on('authenticated', (session) => {
-      console.log('WhatsApp: Authentication successful!');
-    });
-    
-    whatsapp.on('auth_failure', (err) => {
-      console.error('WhatsApp: Authentication failed:', err);
-    });
 
-    whatsapp.on('disconnected', (reason) => {
-      console.log('WhatsApp: Client disconnected:', reason);
-    });
-    
-    whatsapp.on('change_state', state => {
-      console.log('WhatsApp: Connection state:', state);
-    });
-    
-    // Main function to start all services
-    async function main() {
-      try {
-        // Start Telegram client
-        console.log('Telegram: Connecting...');
-        await telegram.connect();
-        const me = await telegram.getMe();
-        console.log('Telegram: Connected as', me.username);
-        
-        // Save session string for future use
-        if (!process.env.TELEGRAM_SESSION_STRING) {
-          const sessionString = telegram.session.save();
-          console.log('Telegram: Save this session string in your .env file:');
-          console.log(sessionString);
-        }
-        
-        // Set up Telegram message handler
-        await setupTelegramHandler();
-        
-        // Start Discord bot if configured
-        if (process.env.DISCORD_BOT_TOKEN) {
-          console.log('Discord: Connecting...');
-          await discord.login(process.env.DISCORD_BOT_TOKEN);
-        }
-        
-        // Initialize WhatsApp if configured
-        if (process.env.WHATSAPP_GROUP_ID) {
-          console.log('WhatsApp: Initializing...');
-          await whatsapp.initialize();
-        }
-        
-        // Keep the process running
-        await new Promise((resolve) => {
-          // Handle graceful shutdown
-          process.on('SIGINT', async () => {
-            console.log('Shutting down...');
-            await telegram.disconnect();
-            await discord.destroy();
-            await whatsapp.destroy();
-            resolve();
-          });
-        });
-        
-      } catch (error) {
-        console.error('Error starting services:', error);
-        process.exit(1);
+    ```javascript index.js
+    require('dotenv').config();
+
+const { TelegramClient } = require('telegram');
+const { StringSession } = require('telegram/sessions');
+const { NewMessage } = require('telegram/events');
+const { Client: DiscordClient, GatewayIntentBits } = require('discord.js');
+const { Client: WhatsAppClient, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+// Load env variables
+const {
+  TELEGRAM_API_ID,
+  TELEGRAM_API_HASH,
+  TELEGRAM_STRING_SESSION,
+  TELEGRAM_CHAT_USERNAME,
+  DISCORD_TOKEN,
+  DISCORD_CHANNEL_ID,
+  WHATSAPP_GROUP_NAME
+} = process.env;
+
+if (!TELEGRAM_API_ID || !TELEGRAM_API_HASH || !TELEGRAM_CHAT_USERNAME) {
+  console.error('Missing Telegram configuration in .env');
+  process.exit(1);
+}
+
+// ----------------------- TELEGRAM -----------------------
+const telegramClient = new TelegramClient(
+  new StringSession(TELEGRAM_STRING_SESSION || ''),
+  parseInt(TELEGRAM_API_ID, 10),
+  TELEGRAM_API_HASH,
+  { connectionRetries: 5 }
+);
+
+// ----------------------- DISCORD -----------------------
+let discordClient;
+if (DISCORD_TOKEN && DISCORD_CHANNEL_ID) {
+  discordClient = new DiscordClient({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+  });
+
+  discordClient.once('ready', () => {
+    console.log(`Discord: Logged in as ${discordClient.user.tag}`);
+  });
+
+  discordClient.login(DISCORD_TOKEN).catch(err =>
+    console.error('Discord login failed:', err)
+  );
+}
+
+// ----------------------- WHATSAPP -----------------------
+let whatsappClient;
+let whatsappGroupId = null;
+
+if (WHATSAPP_GROUP_NAME) {
+  whatsappClient = new WhatsAppClient({
+    authStrategy: new LocalAuth(),
+    puppeteer: { headless: true }
+  });
+
+  whatsappClient.on('qr', qr => {
+    console.log('Scan this QR code to log into WhatsApp:');
+    qrcode.generate(qr, { small: true });
+  });
+
+  whatsappClient.on('ready', async () => {
+    console.log('WhatsApp: Client is ready');
+
+    try {
+      const chats = await whatsappClient.getChats();
+      const group = chats.find(
+        chat => chat.isGroup && chat.name === WHATSAPP_GROUP_NAME
+      );
+
+      if (!group) {
+        console.error(`WhatsApp: Group "${WHATSAPP_GROUP_NAME}" not found.`);
+      } else {
+        whatsappGroupId = group.id._serialized;
+        console.log(`WhatsApp: Found group "${group.name}" with ID ${whatsappGroupId}`);
       }
+    } catch (err) {
+      console.error('WhatsApp group lookup failed:', err);
     }
-    
-    // Run the application
-    main().catch(console.error);
+  });
+
+  whatsappClient.initialize();
+}
+
+// ----------------------- MESSAGE HANDLING -----------------------
+function formatMessage(message) {
+  let text = message.text || message.message || '';
+  const entities = message.entities || [];
+
+  // Format Telegram message to use bold for Discord/WhatsApp
+  entities.sort((a, b) => b.offset - a.offset);
+  for (const entity of entities) {
+    const start = entity.offset;
+    const end = entity.offset + entity.length;
+    if (entity.className === 'MessageEntityBold') {
+      text = text.slice(0, start) + '**' + text.slice(start, end) + '**' + text.slice(end);
+    }
+  }
+
+  return text;
+}
+
+// ----------------------- MAIN -----------------------
+async function start() {
+  console.log('Connecting to Telegram...');
+  await telegramClient.start();
+  console.log('Telegram: Logged in');
+
+  if (!TELEGRAM_STRING_SESSION) {
+    console.log('Telegram: Save this session string to .env:');
+    console.log(telegramClient.session.save());
+  }
+
+  telegramClient.addEventHandler(
+    async event => {
+      const message = event.message;
+      if (!message || !message.text) return;
+
+      const content = formatMessage(message);
+
+      // Forward to Discord
+      if (discordClient) {
+        try {
+          const channel = await discordClient.channels.fetch(DISCORD_CHANNEL_ID);
+          await channel.send(content);
+          console.log('Discord: Message forwarded');
+        } catch (err) {
+          console.error('Discord: Failed to send message:', err);
+        }
+      }
+
+      // Forward to WhatsApp
+      if (whatsappClient && whatsappGroupId) {
+        try {
+          await whatsappClient.sendMessage(whatsappGroupId, content);
+          console.log('WhatsApp: Message forwarded');
+        } catch (err) {
+          console.error('WhatsApp: Failed to send message:', err);
+        }
+      }
+    },
+    new NewMessage({ chats: [TELEGRAM_CHAT_USERNAME] })
+  );
+}
+
+// ----------------------- SHUTDOWN HANDLER -----------------------
+async function shutdown() {
+  console.log('Shutting down...');
+
+  try {
+    await telegramClient.disconnect();
+    console.log('Telegram disconnected');
+  } catch (err) {
+    console.error('Telegram disconnect failed:', err);
+  }
+
+  if (discordClient) {
+    discordClient.destroy();
+    console.log('Discord client destroyed');
+  }
+
+  if (whatsappClient) {
+    await whatsappClient.destroy();
+    console.log('WhatsApp client destroyed');
+  }
+
+  process.exit(0);
+}
+
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);
+
+start().catch(err => {
+  console.error('Startup error:', err);
+  process.exit(1);
+});
+
     ```
+
+    The code includes:
+    - Telegram message listener
+    - Discord message forwarding
+    - WhatsApp Web integration
+    - Message formatting conversion
+    - Graceful shutdown handling
   </Step>
 </Steps>
 
@@ -276,11 +292,14 @@ Before you begin, ensure you have:
 To run your forwarder:
 
 1. Make sure your environment variables are set in `.env`
-2. Start the application:
+2. Run the application:
    ```bash
    node index.js
    ```
-3. If using WhatsApp, scan the QR code that appears in the terminal
+3. On first run:
+   - If `TELEGRAM_STRING_SESSION` is empty, you'll get a session string to add to `.env`
+   - For WhatsApp, scan the QR code that appears in the terminal
+4. The forwarder will now forward messages from the specified Telegram chat to Discord and WhatsApp
 
 <Warning>
   The WhatsApp Web API is unofficial and may break with WhatsApp updates. For production use, consider using the official WhatsApp Business API instead.
