@@ -563,7 +563,7 @@ If you don't need interactive features, a webhook-based integration is simpler t
 
 Create a new file `webhook.js`:
 
-```javascript
+```javascript webhook.js
 require('dotenv').config();
 const fetch = require('node-fetch');
 
@@ -642,8 +642,11 @@ setInterval(checkAreas, 30000);    // Every 30 seconds
 ```
 
 Create a `.env` file:
+<Warning>
+    Never commit your `.env` file to version control. Make sure to add <code>.env</code> to your <code>.gitignore</code>.
+</Warning>
 
-```env
+```env .env
 DISCORD_WEBHOOK_URL=your_webhook_url_here
 ```
 
@@ -658,47 +661,5 @@ node webhook.js
 <Note>
   The webhook-based approach is perfect for teams that just need notifications without interactive features. It's easier to set up and maintain.
 </Note>
-
-## Comparison of Approaches
-
-Here's a detailed comparison to help you choose:
-
-### Discord Bot
-✅ **Pros**:
-- Interactive commands
-- Rich feature set
-- Complete control over behavior
-- Can respond to user queries
-
-❌ **Cons**:
-- Requires hosting
-- More complex setup
-- Ongoing maintenance
-- More development time
-
-### Webhook Integration
-✅ **Pros**:
-- Simple setup
-- No hosting required
-- Less maintenance
-- Quick to implement
-
-❌ **Cons**:
-- No interactive features
-- Limited to one-way communication
-- Basic customization only
-- Can't respond to queries
-
-Choose the webhook approach if:
-- You only need notifications
-- You don't want to manage a server
-- You need a quick solution
-- Your team doesn't need interactive features
-
-Choose the bot approach if:
-- You need interactive commands
-- You want complete control
-- You can manage hosting
-- Your team needs advanced features
 
 </Accordion>
