@@ -32,7 +32,8 @@
             "group": "Guides",
             "pages": [
               "guides/jotihunt/n8n",
-              "guides/jotihunt/discord-bot"
+              "guides/jotihunt/discord-bot",
+              "guides/jotihunt/telegram-forwarder"
             ]
           }
         ]

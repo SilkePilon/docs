@@ -1,0 +1,446 @@
+---
+title: 'Telegram Message Forwarder for Jotihunt'
+description: 'Learn how to forward Jotihunt Telegram messages to Discord or WhatsApp'
+icon: 'paper-plane'
+---
+
+<Frame>
+  <img src="/images/forwarder.png" />
+</Frame>
+
+This guide will show you how to create a Node.js application that forwards messages from the Jotihunt Telegram bot to Discord or WhatsApp. This can help teams stay updated on Jotihunt events through their preferred communication channels.
+
+## What You Can Forward
+
+With this forwarder, you can:
+
+- Forward Jotihunt Telegram messages to Discord channels
+- Forward messages to WhatsApp (using unofficial WhatsApp Web API)
+- Preserve message formatting (bold, links, etc.)
+- Handle different types of updates (hints, assignments, news)
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+1. Node.js installed (version 16.x or higher)
+2. A Telegram account and API credentials
+3. Discord bot token and channel ID (for Discord forwarding)
+4. Basic understanding of async/await and event handling
+
+## Setting Up Your Telegram Forwarder
+
+<Steps>
+  <Step title="Create a new Node.js project">
+    First, create a new directory and initialize your project:
+    
+    ```bash
+    mkdir jotihunt-forwarder
+    cd jotihunt-forwarder
+    npm init -y
+    ```
+      Install the required dependencies:
+      ```bash
+    npm install telegram@latest discord.js@latest whatsapp-web.js@latest dotenv@latest qrcode-terminal@latest puppeteer@latest
+    ```
+  </Step>
+  
+  <Step title="Set up environment variables">
+    Create a `.env` file in your project root:
+    
+    ```env .env
+    # Telegram credentials
+    TELEGRAM_API_ID=your_api_id              # Get from https://my.telegram.org/apps
+    TELEGRAM_API_HASH=your_api_hash          # Get from https://my.telegram.org/apps
+    TELEGRAM_SESSION_STRING=''                # Will be auto-generated on first run
+    TELEGRAM_BOT_USERNAME=@Jotihunt_bot      # The bot username to listen to
+    
+    # Discord credentials
+    DISCORD_BOT_TOKEN=your_discord_bot_token        # Get from Discord Developer Portal
+    DISCORD_CHANNEL_ID=your_discord_channel_id      # Right-click channel > Copy ID
+    
+    # WhatsApp configuration (optional)
+    WHATSAPP_GROUP_ID=your_whatsapp_group_id        # This will be shown after scanning QR
+    WHATSAPP_SESSION_PATH=./whatsapp-session        # Where to store session data
+    ```
+    
+    <Warning>
+        Never commit your `.env` file to version control. Make sure to add <code>.env</code> to your <code>.gitignore</code>.
+    </Warning>
+  </Step>
+  
+  <Step title="Create the forwarder code">
+    Create a new file called `index.js`:
+      ```javascript index.js
+    require('dotenv').config();
+    const { TelegramClient } = require('telegram');
+    const { StringSession } = require('telegram/sessions');
+    const { NewMessage } = require('telegram/events');
+    const { Client, GatewayIntentBits } = require('discord.js');
+    const { Client: WhatsAppClient } = require('whatsapp-web.js');
+    const { LocalAuth } = require('whatsapp-web.js');
+    const qrcode = require('qrcode-terminal');
+    
+    // Initialize Telegram client
+    const telegram = new TelegramClient(
+      new StringSession(process.env.TELEGRAM_SESSION_STRING || ''),
+      parseInt(process.env.TELEGRAM_API_ID),
+      process.env.TELEGRAM_API_HASH,
+      { connectionRetries: 5 }
+    );
+    
+    // Initialize Discord client
+    const discord = new Client({ 
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+      ]
+    });
+      // Initialize WhatsApp client
+    const whatsapp = new WhatsAppClient({
+        authStrategy: new LocalAuth({
+            clientId: 'jotihunt-forwarder',
+            dataPath: process.env.WHATSAPP_SESSION_PATH
+        }),
+        puppeteer: {
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--disable-gpu'
+            ]
+        },
+        qrMaxRetries: 3,
+    });
+      // Function to convert Telegram formatting to Discord/WhatsApp
+    function convertFormatting(message) {
+      let text = message.text || message.message;
+      const entities = message.entities || [];
+      
+      // Sort entities in reverse order to preserve offsets
+      entities.sort((a, b) => b.offset - a.offset);
+      
+      for (const entity of entities) {
+        const start = entity.offset;
+        const end = entity.offset + entity.length;
+        
+        if (entity.className === 'MessageEntityBold') {
+          // Wrap the text with ** for bold (works in both Discord and WhatsApp)
+          text = text.slice(0, start) + 
+            '**' + text.slice(start, end) + '**' + 
+            text.slice(end);
+        }
+      }
+      
+      return text;
+    }
+    
+    // Handle Telegram messages
+    async function setupTelegramHandler() {
+      telegram.addEventHandler(async (event) => {
+        const message = event.message;
+        
+        // Only process messages from Jotihunt bot
+        if (!message || message.senderId?.username !== process.env.TELEGRAM_BOT_USERNAME) {
+          return;
+        }
+        
+        console.log('Telegram: Received message:', message.text);
+        
+        const formattedMessage = convertFormatting(message);
+        
+        // Forward to Discord if configured
+        if (process.env.DISCORD_CHANNEL_ID) {
+          const channel = await discord.channels.fetch(
+            process.env.DISCORD_CHANNEL_ID
+          );
+          if (channel) {
+            await channel.send(formattedMessage);
+            console.log('Discord: Message forwarded successfully');
+          }
+        }
+          // Forward to WhatsApp if configured
+        if (process.env.WHATSAPP_GROUP_ID) {
+          try {
+            const chat = await whatsapp.getChatById(
+              process.env.WHATSAPP_GROUP_ID
+            );
+            if (chat) {
+              await chat.sendMessage(formattedMessage, {
+                sendSeen: false,
+                quoteFails: false,
+                linkPreview: true
+              });
+              console.log('WhatsApp: Message forwarded successfully');
+            }
+          } catch (error) {
+            console.error('WhatsApp: Failed to forward message:', error);
+          }
+        }
+      }, new NewMessage({
+        fromUsers: [process.env.TELEGRAM_BOT_USERNAME]
+      }));
+    }
+      // Set up event handlers for all clients
+    discord.once('ready', () => {
+      console.log('Discord: Logged in as', discord.user.tag);
+    });
+      // WhatsApp event handlers
+    whatsapp.on('qr', (qr) => {
+      console.log('WhatsApp: Scan this QR code with WhatsApp to log in:');
+      qrcode.generate(qr, { small: true });
+    });
+    
+    whatsapp.on('ready', () => {
+      console.log('WhatsApp: Client is ready!');
+    });
+    
+    whatsapp.on('authenticated', (session) => {
+      console.log('WhatsApp: Authentication successful!');
+    });
+    
+    whatsapp.on('auth_failure', (err) => {
+      console.error('WhatsApp: Authentication failed:', err);
+    });
+
+    whatsapp.on('disconnected', (reason) => {
+      console.log('WhatsApp: Client disconnected:', reason);
+    });
+    
+    whatsapp.on('change_state', state => {
+      console.log('WhatsApp: Connection state:', state);
+    });
+    
+    // Main function to start all services
+    async function main() {
+      try {
+        // Start Telegram client
+        console.log('Telegram: Connecting...');
+        await telegram.connect();
+        const me = await telegram.getMe();
+        console.log('Telegram: Connected as', me.username);
+        
+        // Save session string for future use
+        if (!process.env.TELEGRAM_SESSION_STRING) {
+          const sessionString = telegram.session.save();
+          console.log('Telegram: Save this session string in your .env file:');
+          console.log(sessionString);
+        }
+        
+        // Set up Telegram message handler
+        await setupTelegramHandler();
+        
+        // Start Discord bot if configured
+        if (process.env.DISCORD_BOT_TOKEN) {
+          console.log('Discord: Connecting...');
+          await discord.login(process.env.DISCORD_BOT_TOKEN);
+        }
+        
+        // Initialize WhatsApp if configured
+        if (process.env.WHATSAPP_GROUP_ID) {
+          console.log('WhatsApp: Initializing...');
+          await whatsapp.initialize();
+        }
+        
+        // Keep the process running
+        await new Promise((resolve) => {
+          // Handle graceful shutdown
+          process.on('SIGINT', async () => {
+            console.log('Shutting down...');
+            await telegram.disconnect();
+            await discord.destroy();
+            await whatsapp.destroy();
+            resolve();
+          });
+        });
+        
+      } catch (error) {
+        console.error('Error starting services:', error);
+        process.exit(1);
+      }
+    }
+    
+    // Run the application
+    main().catch(console.error);
+    ```
+  </Step>
+</Steps>
+
+## Running the Forwarder
+
+To run your forwarder:
+
+1. Make sure your environment variables are set in `.env`
+2. Start the application:
+   ```bash
+   node index.js
+   ```
+3. If using WhatsApp, scan the QR code that appears in the terminal
+
+<Warning>
+  The WhatsApp Web API is unofficial and may break with WhatsApp updates. For production use, consider using the official WhatsApp Business API instead.
+</Warning>
+
+## Handling Different Message Types
+
+The Jotihunt bot sends different types of messages. Here's how to handle them:
+
+<CodeGroup>
+  <CodeGroup.Tab title="Message Parser" active>
+  ```javascript
+  function parseJotihuntMessage(text) {
+    // Common message patterns
+    const patterns = {
+      hint: /^🔍.*HINT/i,
+      assignment: /^📝.*OPDRACHT/i,
+      news: /^📢.*NIEUWS/i
+    };
+    
+    // Determine message type
+    let type = 'other';
+    for (const [msgType, pattern] of Object.entries(patterns)) {
+      if (pattern.test(text)) {
+        type = msgType;
+        break;
+      }
+    }
+    
+    return {
+      type,
+      content: text
+    };
+  }
+  ```
+  </CodeGroup.Tab>
+  
+  <CodeGroup.Tab title="Custom Formatting">
+  ```javascript
+  function formatForPlatform(message, platform) {
+    const { type, content } = parseJotihuntMessage(message);
+    
+    // Platform-specific formatting
+    switch (platform) {
+      case 'discord':
+        return formatForDiscord(type, content);
+      case 'whatsapp':
+        return formatForWhatsApp(type, content);
+      default:
+        return content;
+    }
+  }
+  ```
+  </CodeGroup.Tab>
+</CodeGroup>
+
+## Advanced Configuration
+
+Here are some additional configuration options you might want to add:
+
+<CardGroup cols={2}>
+  <Card
+    title="Message Filtering"
+    icon="filter"
+  >
+    Add filters to only forward specific types of messages
+  </Card>
+  <Card
+    title="Multiple Channels"
+    icon="share-nodes"
+  >
+    Forward different message types to different channels
+  </Card>
+  <Card
+    title="Error Handling"
+    icon="triangle-exclamation"
+  >
+    Add robust error handling and automatic reconnection
+  </Card>
+  <Card
+    title="Message Queue"
+    icon="list-check"
+  >
+    Implement a message queue for reliable delivery
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+- **Error Handling**: Implement proper error handling for all API calls
+- **Rate Limiting**: Respect platform-specific rate limits
+- **Logging**: Add comprehensive logging for debugging
+- **Message Queue**: Consider using a message queue for reliability
+- **Monitoring**: Set up monitoring for the forwarder service
+- **Testing**: Test with different message types and formats
+
+## Running as a Service
+
+To run your forwarder continuously, you can use a process manager like PM2:
+
+```bash
+# Install PM2
+npm install -g pm2
+
+# Start your forwarder
+pm2 start index.js --name jotihunt-forwarder
+
+# Monitor the process
+pm2 monit
+```
+
+## Security Considerations
+
+When implementing the forwarder, keep these security considerations in mind:
+
+1. **API Credentials**: Keep all API tokens secure
+2. **Message Validation**: Validate messages before forwarding
+3. **Access Control**: Limit which messages get forwarded
+4. **Logging**: Don't log sensitive information
+5. **Updates**: Keep dependencies updated
+
+## Troubleshooting
+
+Common issues and solutions:
+
+<AccordionGroup>
+  <Accordion title="Connection Issues">
+    If the forwarder disconnects frequently:
+    1. Check your internet connection
+    2. Implement automatic reconnection
+    3. Add connection status logging
+  </Accordion>
+  
+  <Accordion title="Message Format Problems">
+    If messages aren't formatting correctly:
+    1. Check the message parsing logic
+    2. Log raw messages for debugging
+    3. Test with different message types
+  </Accordion>
+  
+  <Accordion title="WhatsApp Authentication">
+    If WhatsApp Web authentication fails:
+    1. Clear your WhatsApp Web sessions
+    2. Regenerate the QR code
+    3. Check for WhatsApp Web API updates
+  </Accordion>
+</AccordionGroup>
+
+## Conclusion
+
+By implementing this Telegram forwarder, you can ensure your team stays updated on Jotihunt events through their preferred communication channels. Remember to monitor the forwarder's performance and handle errors appropriately.
+
+## Credits and Inspiration
+
+This tutorial is inspired by the [jotihunt-telegram-forwarder](https://github.com/ScoutingScherpenzeel/jotihunt-telegram-forwarder) project by ScoutingScherpenzeel, which provides a Python implementation of similar functionality. This Node.js version offers an alternative approach while maintaining the same core functionality.
+
+<Card
+  title="Need Help?"
+  icon="circle-question"
+  href="https://jotihunt.nl/contact"
+>
+  If you have questions about the Jotihunt API or need assistance, contact the Jotihunt organization.
+</Card>
