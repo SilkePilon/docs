@@ -1,3 +1,102 @@
 ---
 openapi: get /articles
 ---
+
+## Use Cases
+
+The `/articles` endpoint allows you to retrieve all published articles from the Jotihunt platform. Here are some common use cases:
+
+- **Game Updates**: Display the latest news and announcements on your team's dashboard.
+- **Event Timeline**: Create a chronological timeline of all important event announcements.
+- **Notification System**: Implement a notification system to alert your team about new articles.
+- **Content Aggregation**: Incorporate Jotihunt articles into your team's custom application.
+
+## Code Examples
+
+<CodeGroup>
+```javascript fetch-articles.js
+// Using fetch to retrieve all published articles
+fetch('https://jotihunt.nl/api/articles')
+  .then(response => response.json())
+  .then(data => {
+    console.log('Articles:', data);
+    // Process articles - e.g., display the most recent ones
+    const recentArticles = data.slice(0, 5);
+    recentArticles.forEach(article => {
+      console.log(`${article.title} - ${article.publishDate}`);
+    });
+  })
+  .catch(error => {
+    console.error('Error fetching articles:', error);
+  });
+```
+
+```python get_articles.py
+# Using requests to retrieve and process articles
+import requests
+import datetime
+
+response = requests.get('https://jotihunt.nl/api/articles')
+if response.status_code == 200:
+    articles = response.json()
+    print(f'Found {len(articles)} articles')
+    
+    # Example: Filter articles by date (last 24 hours)
+    now = datetime.datetime.now()
+    recent_articles = [
+        article for article in articles
+        if (now - datetime.datetime.fromisoformat(article['publishDate'])).days < 1
+    ]
+    
+    for article in recent_articles:
+        print(f"{article['title']} - {article['publishDate']}")
+else:
+    print(f'Error: {response.status_code}')
+```
+
+```java GetArticles.java
+// Using Java HttpClient (Java 11+) for article retrieval and filtering
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class GetArticles {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://jotihunt.nl/api/articles"))
+                .build();
+                
+        // Synchronous call for simplicity in this example
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Parse JSON response
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, Object>> articles = mapper.readValue(
+            response.body(), 
+            new TypeReference<List<Map<String, Object>>>(){}
+        );
+        
+        System.out.println("Total articles: " + articles.size());
+        
+        // Example: Filter articles with "hint" in the title
+        List<Map<String, Object>> hintArticles = articles.stream()
+            .filter(article -> ((String)article.get("title")).toLowerCase().contains("hint"))
+            .collect(Collectors.toList());
+            
+        System.out.println("Hint articles: " + hintArticles.size());
+        hintArticles.forEach(article -> 
+            System.out.println(article.get("title") + " - " + article.get("publishDate")));
+    }
+}
+```
+</CodeGroup>

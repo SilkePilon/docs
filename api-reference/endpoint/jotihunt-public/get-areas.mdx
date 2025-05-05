@@ -1,3 +1,138 @@
 ---
 openapi: get /areas
 ---
+
+## Use Cases
+
+The `/areas` endpoint provides information about all the hunting areas in the Jotihunt game. Here are some practical use cases:
+
+- **Interactive Maps**: Create custom maps showing the boundaries of each hunting area.
+- **Team Strategy**: Develop strategies based on area information and team locations.
+- **Location Tracking**: Track which areas your team has visited or needs to visit.
+- **Area Status Monitoring**: Monitor status changes of different areas throughout the game.
+
+## Code Examples
+
+<CodeGroup>
+```javascript area-mapper.js
+// Using fetch to retrieve areas and map them
+fetch('https://jotihunt.nl/api/areas')
+  .then(response => response.json())
+  .then(data => {
+    console.log(`Retrieved ${data.length} areas`);
+    
+    // Example: Creating a map of area names to their coordinates
+    const areaMap = {};
+    data.forEach(area => {
+      areaMap[area.name] = {
+        latitude: area.latitude,
+        longitude: area.longitude,
+        status: area.status
+      };
+    });
+    
+    // Log areas with a specific status
+    const activeAreas = data.filter(area => area.status === 'active');
+    console.log(`Active areas: ${activeAreas.map(a => a.name).join(', ')}`);
+  })
+  .catch(error => {
+    console.error('Error fetching areas:', error);
+  });
+```
+
+```python area_analyzer.py
+# Using requests to retrieve and analyze areas
+import requests
+import folium
+
+response = requests.get('https://jotihunt.nl/api/areas')
+if response.status_code == 200:
+    areas = response.json()
+    print(f'Retrieved {len(areas)} areas')
+    
+    # Example: Create a map using folium
+    m = folium.Map(location=[52.1326, 5.2913], zoom_start=8)
+    
+    # Add markers for each area
+    for area in areas:
+        color = 'green' if area['status'] == 'active' else 'red'
+        folium.Marker(
+            [area['latitude'], area['longitude']],
+            popup=area['name'],
+            icon=folium.Icon(color=color)
+        ).add_to(m)
+    
+    # Save map to HTML file
+    m.save('jotihunt_areas.html')
+    print('Map saved to jotihunt_areas.html')
+else:
+    print(f'Error: {response.status_code}')
+```
+
+```java AreaMonitor.java
+// Using Java HttpClient (Java 11+) for retrieving and analyzing areas
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class AreaMonitor {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://jotihunt.nl/api/areas"))
+                .build();
+                
+        // Synchronous call with response handling
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Parse JSON response
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, Object>> areas = mapper.readValue(
+            response.body(), 
+            new TypeReference<List<Map<String, Object>>>(){}
+        );
+        
+        System.out.println("Total areas: " + areas.size());
+        
+        // Group areas by status
+        Map<String, List<String>> areasByStatus = new HashMap<>();
+        
+        for (Map<String, Object> area : areas) {
+            String status = (String) area.get("status");
+            String name = (String) area.get("name");
+            
+            if (!areasByStatus.containsKey(status)) {
+                areasByStatus.put(status, new ArrayList<>());
+            }
+            areasByStatus.get(status).add(name);
+        }
+        
+        // Print areas by status
+        areasByStatus.forEach((status, areaNames) -> {
+            System.out.println(status + " areas: " + String.join(", ", areaNames));
+        });
+        
+        // Calculate center point of all areas (for mapping)
+        double avgLat = areas.stream()
+            .mapToDouble(area -> Double.parseDouble(area.get("latitude").toString()))
+            .average()
+            .orElse(0);
+            
+        double avgLon = areas.stream()
+            .mapToDouble(area -> Double.parseDouble(area.get("longitude").toString()))
+            .average()
+            .orElse(0);
+            
+        System.out.println("Center point: " + avgLat + ", " + avgLon);
+    }
+}
+```
+</CodeGroup>

@@ -1,3 +1,152 @@
 ---
 openapi: get /subscriptions
 ---
+
+## Use Cases
+
+The `/subscriptions` endpoint allows you to retrieve information about available subscription options for the Jotihunt platform. Common use cases include:
+
+- **Team Registration**: Check available subscription options before registering your team.
+- **Pricing Information**: Display subscription pricing and features in your custom application.
+- **Subscription Comparisons**: Create a comparison table of different subscription tiers.
+- **Budget Planning**: Help teams plan their budget by providing subscription cost information.
+
+## Code Examples
+
+<CodeGroup>
+```javascript subscription-display.js
+// Using fetch to retrieve and display subscription options
+fetch('https://jotihunt.nl/api/subscriptions')
+  .then(response => response.json())
+  .then(data => {
+    console.log(`Found ${data.length} subscription options`);
+    
+    // Example: Sort subscriptions by price
+    const sortedByPrice = [...data].sort((a, b) => a.price - b.price);
+    
+    // Display subscription options in a formatted way
+    sortedByPrice.forEach(sub => {
+      console.log(`${sub.name}: €${sub.price}`);
+      console.log(`  Features: ${sub.features.join(', ')}`);
+      console.log(`  Available until: ${new Date(sub.availableUntil).toLocaleDateString()}`);
+      console.log('---');
+    });
+    
+    // Find premium subscriptions
+    const premiumOptions = data.filter(sub => sub.tier === 'premium');
+    console.log(`Premium options: ${premiumOptions.length}`);
+  })
+  .catch(error => {
+    console.error('Error fetching subscriptions:', error);
+  });
+```
+
+```python subscription_analyzer.py
+# Using requests to retrieve and analyze subscription options
+import requests
+from datetime import datetime
+from tabulate import tabulate
+
+response = requests.get('https://jotihunt.nl/api/subscriptions')
+if response.status_code == 200:
+    subscriptions = response.json()
+    print(f'Found {len(subscriptions)} subscription options')
+    
+    # Example: Create a comparison table
+    table_data = []
+    headers = ['Name', 'Price (€)', 'Tier', 'Available Until']
+    
+    for sub in subscriptions:
+        # Format the date
+        available_until = datetime.fromisoformat(sub['availableUntil']).strftime('%d-%m-%Y')
+        
+        # Add subscription to table
+        table_data.append([
+            sub['name'],
+            sub['price'],
+            sub['tier'],
+            available_until
+        ])
+    
+    # Print formatted table
+    print(tabulate(table_data, headers=headers, tablefmt='grid'))
+    
+    # Find the cheapest option
+    cheapest = min(subscriptions, key=lambda x: x['price'])
+    print(f"Cheapest option: {cheapest['name']} (€{cheapest['price']})")
+else:
+    print(f'Error: {response.status_code}')
+```
+
+```java SubscriptionManager.java
+// Using Java HttpClient (Java 11+) to manage subscription information
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class SubscriptionManager {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://jotihunt.nl/api/subscriptions"))
+                .build();
+                
+        // Synchronous call for subscription data
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        // Parse JSON response
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, Object>> subscriptions = mapper.readValue(
+            response.body(), 
+            new TypeReference<List<Map<String, Object>>>(){}
+        );
+        
+        System.out.println("Available subscription options: " + subscriptions.size());
+        
+        // Example: Find subscriptions by tier
+        Map<String, List<Map<String, Object>>> subscriptionsByTier = subscriptions.stream()
+            .collect(Collectors.groupingBy(sub -> (String) sub.get("tier")));
+            
+        // Print subscription tiers
+        subscriptionsByTier.forEach((tier, subs) -> {
+            System.out.println("\n" + tier.toUpperCase() + " TIER (" + subs.size() + " options):");
+            subs.forEach(sub -> {
+                System.out.println("  - " + sub.get("name") + " (€" + sub.get("price") + ")");
+            });
+        });
+        
+        // Find best value subscription (most features per euro)
+        Optional<Map<String, Object>> bestValue = subscriptions.stream()
+            .max(Comparator.comparingDouble(sub -> {
+                int features = ((List<?>) sub.get("features")).size();
+                double price = Double.parseDouble(sub.get("price").toString());
+                return features / price;
+            }));
+            
+        bestValue.ifPresent(sub -> {
+            System.out.println("\nBest value subscription: " + sub.get("name"));
+            System.out.println("  Price: €" + sub.get("price"));
+            System.out.println("  Features: " + ((List<?>) sub.get("features")).size());
+            
+            // Format available until date
+            String availableUntil = (String) sub.get("availableUntil");
+            LocalDate date = LocalDate.parse(availableUntil);
+            String formattedDate = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+            
+            System.out.println("  Available until: " + formattedDate);
+        });
+    }
+}
+```
+</CodeGroup>
