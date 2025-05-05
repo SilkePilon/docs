@@ -149,6 +149,243 @@ Error responses include additional details:
 }
 ```
 
+## Test Data with Wayback Machine
+
+If you need test data or want to access a previous version of the Jotihunt API, you can use the Internet Archive's Wayback Machine API. This is particularly useful for development and testing without affecting production data.
+
+<Card
+  title="Access Historical API Data"
+  icon="clock-rotate-left"
+  href="https://archive.org/help/wayback_api.php"
+>
+  The Wayback Machine provides archived versions of the Jotihunt API
+</Card>
+
+<Steps>
+  <Step title="Find an archived version">
+    Use the Wayback Availability JSON API to find available snapshots of the Jotihunt API:
+    
+    ```
+    https://archive.org/wayback/available?url=jotihunt.nl/api/2.0
+    ```
+    
+    This will return information about available archived snapshots.
+  </Step>
+  <Step title="Extract the archived URL">
+    From the response, extract the archived URL. Here's a sample response:
+    
+    ```json
+    {
+      "archived_snapshots": {
+        "closest": {
+          "available": true,
+          "url": "http://web.archive.org/web/20221010123456/https://jotihunt.nl/api/2.0",
+          "timestamp": "20221010123456",
+          "status": "200"
+        }
+      }
+    }
+    ```
+    
+    The `url` field contains the Wayback Machine URL to access the archived API.
+  </Step>  <Step title="Use the archived API">
+    Replace your base URL with the archived URL path for your API requests:
+    
+    <CodeGroup>
+      <CodeGroup.Tab title="JavaScript" active>
+      ```javascript
+      // Production API
+      const currentApiUrl = 'https://jotihunt.nl/api/2.0';
+      
+      // Archived API from Wayback Machine
+      const archivedApiUrl = 'https://web.archive.org/web/20221010123456/https://jotihunt.nl/api/2.0';
+      
+      // Example fetch request using archived API
+      fetch(`${archivedApiUrl}/articles`)
+        .then(response => response.json())
+        .then(data => console.log(data));
+      ```
+      </CodeGroup.Tab>
+      <CodeGroup.Tab title="Python">
+      ```python
+      import requests
+      
+      # Production API
+      current_api_url = 'https://jotihunt.nl/api/2.0'
+      
+      # Archived API from Wayback Machine
+      archived_api_url = 'https://web.archive.org/web/20221010123456/https://jotihunt.nl/api/2.0'
+      
+      # Example request using archived API
+      response = requests.get(f'{archived_api_url}/articles')
+      data = response.json()
+      print(data)
+      ```
+      </CodeGroup.Tab>
+      <CodeGroup.Tab title="Java">
+      ```java
+      import java.net.URI;
+      import java.net.http.HttpClient;
+      import java.net.http.HttpRequest;
+      import java.net.http.HttpResponse;
+
+      public class JotihuntApiClient {
+          // Production API
+          private static final String CURRENT_API_URL = "https://jotihunt.nl/api/2.0";
+          
+          // Archived API from Wayback Machine
+          private static final String ARCHIVED_API_URL = "https://web.archive.org/web/20221010123456/https://jotihunt.nl/api/2.0";
+          
+          public static void main(String[] args) throws Exception {
+              HttpClient client = HttpClient.newHttpClient();
+              HttpRequest request = HttpRequest.newBuilder()
+                  .uri(URI.create(ARCHIVED_API_URL + "/articles"))
+                  .header("Accept", "application/json")
+                  .build();
+                  
+              HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+              System.out.println(response.body());
+          }
+      }
+      ```
+      </CodeGroup.Tab>
+    </CodeGroup>
+  </Step>
+</Steps>
+
+<Note>
+  Using the Wayback Machine API provides access to historical data but may not always be as reliable or fast as the current API. It's recommended only for development, testing, or historical analysis purposes.
+</Note>
+
+<Info>
+  You can specify a particular date in the Wayback API by including a timestamp parameter: `https://archive.org/wayback/available?url=jotihunt.nl/api/2.0&timestamp=20221010` to get a snapshot closest to October 10, 2022.
+</Info>
+
+## Example API Usage with Wayback
+
+Here are some additional examples of how to interact with historical versions of the Jotihunt API using the Wayback Machine:
+
+<CodeGroup>
+```javascript wayback-fetch.js
+// Using async/await with the Wayback Machine API
+async function fetchHistoricalData() {
+  try {
+    // First, find available snapshots
+    const waybackResponse = await fetch(
+      'https://archive.org/wayback/available?url=jotihunt.nl/api/2.0'
+    );
+    const waybackData = await waybackResponse.json();
+    
+    if (waybackData.archived_snapshots && waybackData.archived_snapshots.closest) {
+      const archivedUrl = waybackData.archived_snapshots.closest.url;
+      console.log(`Found archived version: ${archivedUrl}`);
+      
+      // Now fetch data from the archived API
+      const apiResponse = await fetch(`${archivedUrl}/articles`);
+      const apiData = await apiResponse.json();
+      
+      return apiData;
+    } else {
+      console.error('No archived snapshots found');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    return null;
+  }
+}
+
+// Call the function
+fetchHistoricalData().then(data => console.log(data));
+```
+
+```python wayback_api.py
+import requests
+
+def fetch_historical_data():
+    try:
+        # First, find available snapshots
+        wayback_response = requests.get(
+            'https://archive.org/wayback/available?url=jotihunt.nl/api/2.0'
+        )
+        wayback_data = wayback_response.json()
+        
+        if (wayback_data.get('archived_snapshots') and 
+            wayback_data['archived_snapshots'].get('closest')):
+            
+            archived_url = wayback_data['archived_snapshots']['closest']['url']
+            print(f"Found archived version: {archived_url}")
+            
+            # Now fetch data from the archived API
+            api_response = requests.get(f"{archived_url}/articles")
+            api_data = api_response.json()
+            
+            return api_data
+        else:
+            print("No archived snapshots found")
+            return None
+    except Exception as e:
+        print(f"Error fetching historical data: {e}")
+        return None
+
+# Call the function
+data = fetch_historical_data()
+print(data)
+```
+
+```java WaybackApiClient.java
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import org.json.JSONObject;
+
+public class WaybackApiClient {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        // Create HttpClient
+        HttpClient client = HttpClient.newHttpClient();
+        
+        // First, find available snapshots
+        HttpRequest waybackRequest = HttpRequest.newBuilder()
+            .uri(URI.create("https://archive.org/wayback/available?url=jotihunt.nl/api/2.0"))
+            .build();
+            
+        HttpResponse<String> waybackResponse = client.send(
+            waybackRequest, 
+            HttpResponse.BodyHandlers.ofString()
+        );
+        
+        // Parse JSON response
+        JSONObject waybackData = new JSONObject(waybackResponse.body());
+        
+        if (waybackData.has("archived_snapshots") && 
+            !waybackData.getJSONObject("archived_snapshots").isEmpty()) {
+            
+            JSONObject closest = waybackData.getJSONObject("archived_snapshots")
+                .getJSONObject("closest");
+            String archivedUrl = closest.getString("url");
+            System.out.println("Found archived version: " + archivedUrl);
+            
+            // Now fetch data from the archived API
+            HttpRequest apiRequest = HttpRequest.newBuilder()
+                .uri(URI.create(archivedUrl + "/articles"))
+                .build();
+                
+            HttpResponse<String> apiResponse = client.send(
+                apiRequest, 
+                HttpResponse.BodyHandlers.ofString()
+            );
+            
+            System.out.println("API Response: " + apiResponse.body());
+        } else {
+            System.out.println("No archived snapshots found");
+        }
+    }
+}
+```
+</CodeGroup>
+
 ## API Endpoints
 
 Let's explore the available endpoints in more detail:
