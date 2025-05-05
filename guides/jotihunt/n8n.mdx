@@ -1,0 +1,413 @@
+---
+title: 'Automating Jotihunt with n8n'
+description: 'Learn how to integrate the Jotihunt API with n8n for automated workflows'
+icon: 'robot'
+---
+
+# Automating Jotihunt with n8n
+
+[n8n](https://n8n.io/) is a powerful workflow automation platform that can help Jotihunt teams automate tasks, monitor API updates, and streamline coordination. This guide will show you how to integrate the Jotihunt API with n8n to create powerful automation workflows.
+
+## What You Can Automate
+
+With the Jotihunt API and n8n, you can automate:
+
+- Real-time notifications for new articles, hints, and opdrachten (assignments)
+- Automatic creation of tasks in project management tools
+- Alert systems when area statuses change
+- Messaging to team communication platforms (Slack, Discord, Google Chat)
+- Data collection and analysis for strategic decision-making
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+1. An [n8n account](https://n8n.io/) (self-hosted or cloud)
+2. Access to the Jotihunt API
+3. Basic understanding of HTTP requests and JSON
+4. Access to your team's communication tools (optional)
+
+## Setting Up Your First n8n Workflow
+
+<Steps>
+  <Step title="Create a new workflow in n8n">
+    1. Log in to your n8n instance
+    2. Click on "Workflows" in the sidebar
+    3. Click the "+ Create Workflow" button
+    4. Name your workflow (e.g., "Jotihunt Article Monitor")
+  </Step>
+  
+  <Step title="Add a trigger node">
+    You'll need a node to trigger your workflow at regular intervals. The Schedule Trigger node works well:
+    
+    1. Click the "+ Add node" button
+    2. Search for "Schedule" and select "Schedule Trigger"
+    3. Configure how often you want to check for updates:
+       - For live monitoring during the event: Every 1-5 minutes
+       - For testing: Every hour or manually
+  </Step>
+  
+  <Step title="Connect to the Jotihunt API">
+    1. Add an HTTP Request node
+    2. Configure it to make a GET request to the Jotihunt API:
+    
+    ```
+    https://jotihunt.nl/api/2.0/articles
+    ```
+    
+    3. For testing with historical data, use the Wayback Machine URL format:
+    
+    ```
+    https://web.archive.org/web/20221010123456/https://jotihunt.nl/api/2.0/articles
+    ```
+    
+    <Info>
+      If you need test data outside of the event, refer to the [Wayback Machine section](/api-reference/jotihunt/introduction#test-data-with-wayback-machine) in our API documentation.
+    </Info>
+  </Step>
+</Steps>
+
+## Processing API Responses
+
+Once you've set up your HTTP Request node to fetch data from the Jotihunt API, you'll need to process the response.
+
+<CodeGroup>
+  <CodeGroup.Tab title="Articles Endpoint Example" active>
+  ```javascript
+  // Example of processing articles response in n8n Function node
+  const articles = items[0].json.data;
+  
+  // Filter only new articles since last check
+  // You'll need to implement your own tracking mechanism
+  const newArticles = articles.filter(article => {
+    // Example: Filter by publication date
+    const publishDate = new Date(article.publish_at);
+    const lastCheckDate = new Date(/* your last check timestamp */);
+    return publishDate > lastCheckDate;
+  });
+  
+  // Return only new articles for further processing
+  return newArticles.map(article => {
+    return {
+      json: {
+        title: article.title,
+        type: article.type,
+        content: article.message.content,
+        publishedAt: article.publish_at,
+        id: article.id
+      }
+    }
+  });
+  ```
+  </CodeGroup.Tab>
+  
+  <CodeGroup.Tab title="Areas Endpoint Example">
+  ```javascript
+  // Example of processing areas response in n8n Function node
+  const areas = items[0].json.data;
+  
+  // Check for status changes
+  const statusChanges = areas.filter(area => {
+    // Compare with your stored previous statuses
+    const previousStatus = getPreviousStatus(area.name); // You need to implement this
+    return area.status !== previousStatus;
+  });
+  
+  // Return areas with status changes
+  return statusChanges.map(area => {
+    return {
+      json: {
+        name: area.name,
+        status: area.status,
+        previousStatus: getPreviousStatus(area.name),
+        changedAt: new Date().toISOString()
+      }
+    }
+  });
+  ```
+  </CodeGroup.Tab>
+</CodeGroup>
+
+## Advanced Workflow: AI-Powered Analysis
+
+You can enhance your Jotihunt workflow with AI to automatically analyze new hints and assignments. Here's how to set up an advanced workflow that:
+
+1. Fetches new articles from the API
+2. Uses AI to analyze content and determine actions
+3. Creates tasks in ClickUp
+4. Sends notifications to Google Chat
+
+<Steps>
+  <Step title="Set up the basic workflow">
+    Follow the steps above to create a workflow that fetches articles from the Jotihunt API.
+  </Step>
+  
+  <Step title="Add an AI node">
+    1. Add an AI Agent node (requires n8n's LangChain integration)
+    2. Connect it to your HTTP Request node
+    3. Create a system prompt that helps the AI understand how to process Jotihunt content
+    
+    <Warning>
+      Make sure your system prompt includes context about Jotihunt, what kinds of content to expect, and how to categorize articles (hints, assignments, news).
+    </Warning>
+  </Step>
+  
+  <Step title="Configure integration tools">
+    Add nodes for your team's tools:
+    
+    1. ClickUp (or other task management system)
+    2. Google Chat, Slack, or Discord for notifications
+    3. Google Sheets or a database for tracking data
+  </Step>
+</Steps>
+
+## Example Workflow: Jotihunt 2025 Automation
+
+Here's an example of a complete workflow for automating Jotihunt 2025:
+
+```javascript
+// Sample workflow structure (simplified)
+{
+  "name": "JotiHunt 2025",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": []
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://jotihunt.nl/api/2.0/articles",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=New {{ $json.data[0].type }}\n\nTitle: {{ $json.data[0].title }}\nPublish at: {{ $json.data[0].publish_at }}\nContent: {{ $json.data[0].message.content }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "name": "AI Agent"
+    },
+    // Other nodes for task creation and notifications
+  ]
+}
+```
+
+This workflow:
+1. Checks for new articles every few minutes
+2. Processes the articles and identifies their type (hint, assignment, news)
+3. Uses AI to analyze the content and extract key information
+4. Creates appropriate tasks in ClickUp with all necessary details
+5. Sends formatted notifications to Google Chat with actionable information
+
+### Workflow Configuration Details
+
+The core components of this workflow are:
+
+1. **Schedule Trigger**: Runs every 5 minutes during the event
+2. **HTTP Request**: Fetches the latest articles from `https://jotihunt.nl/api/2.0/articles`
+3. **AI Agent**: Processes the content with a comprehensive system prompt
+
+### AI System Prompt Example
+
+This is an example of an AI system prompt that can effectively process Jotihunt content:
+
+```
+You are an advanced Jotihunt Intelligence Assistant designed to analyze and process incoming assignments (opdrachten), hints, and news updates for the Jotihunt live game.
+
+## ABOUT JOTIHUNT:
+Jotihunt is an annual interactive fox hunt for Dutch scouting groups in Gelderland, organized by volunteers. Teams ("hunters") track fox teams moving throughout Gelderland. Fox locations are revealed through cryptic hints on the game website.
+
+## YOUR RESPONSIBILITIES:
+When receiving new information, you will categorize it as one of three types:
+- HINT: Clues about fox team locations that need deciphering
+- OPDRACHT (ASSIGNMENT): Tasks the team must complete to earn points
+- NEWS: General game updates, rule changes, announcements, or other information
+
+For each type, you will:
+1. ANALYZE THE CONTENT
+2. SEND DETAILED MESSAGE
+3. CREATE TASK (for hints and assignments only)
+```
+
+### Task Creation Logic
+
+For each article type, you'll want different task parameters:
+
+<CodeGroup>
+  <CodeGroup.Tab title="Hint Tasks" active>
+  ```javascript
+  // Example task creation for hints
+  if (itemType === 'hint') {
+    // Create in the Hints list
+    return {
+      name: `Hint: ${article.title}`,
+      content: formatHintContent(article),
+      priority: determineUrgency(article),
+      timeEstimate: estimateDifficulty(article) * 3600, // in seconds
+      // other parameters...
+    }
+  }
+  ```
+  </CodeGroup.Tab>
+  
+  <CodeGroup.Tab title="Assignment Tasks">
+  ```javascript
+  // Example task creation for assignments
+  if (itemType === 'opdracht') {
+    // Create in the Assignments list
+    return {
+      name: `Opdracht: ${article.title}`,
+      content: formatAssignmentContent(article),
+      priority: determineDueDate(article) ? 1 : 2, // higher priority if due soon
+      dueDateTime: extractDueDate(article),
+      timeEstimate: estimateCompletionTime(article) * 3600, // in seconds
+      // other parameters...
+    }
+  }
+  ```
+  </CodeGroup.Tab>
+</CodeGroup>
+
+## Google Chat Integration
+
+To send notifications to your team's Google Chat space, add a Google Chat node:
+
+```javascript
+{
+  "parameters": {
+    "spaceId": "=JotiHunt 2025",
+    "messageUi": {
+      "text": "{{ $json.formattedMessage }}"
+    }
+  },
+  "type": "n8n-nodes-base.googleChatTool"
+}
+```
+
+Your AI processing node should format messages differently based on content type:
+
+<CodeGroup>
+  <CodeGroup.Tab title="Hint Notification Format" active>
+  ```
+  🔍 **NEW HINT: [Title]**
+  
+  **Summary:** [Brief overview of the hint]
+  
+  **Details:** [Full hint content]
+  
+  **Initial Analysis:**
+  - [Key observation 1]
+  - [Key observation 2]
+  - [Key observation 3]
+  
+  **Suggested Approach:**
+  1. [Step 1]
+  2. [Step 2]
+  3. [Step 3]
+  
+  **ClickUp Task:** [Link to created task]
+  ```
+  </CodeGroup.Tab>
+  
+  <CodeGroup.Tab title="Assignment Notification Format">
+  ```
+  📝 **NEW ASSIGNMENT: [Title]**
+  
+  **Deadline:** [Extracted deadline]
+  
+  **Requirements:**
+  - [Requirement 1]
+  - [Requirement 2]
+  - [Requirement 3]
+  
+  **Resources Needed:**
+  - [Resource 1]
+  - [Resource 2]
+  
+  **Difficulty Level:** [Easy/Medium/Hard]
+  
+  **ClickUp Task:** [Link to created task]
+  ```
+  </CodeGroup.Tab>
+</CodeGroup>
+
+## Testing Your Workflow
+
+Before the actual Jotihunt event, you should test your workflow thoroughly:
+
+<Steps>
+  <Step title="Use test data">
+    Set up your workflow with historical data using the Wayback Machine API.
+    See the [Test Data with Wayback Machine](/api-reference/jotihunt/introduction#test-data-with-wayback-machine) section of our documentation.
+  </Step>
+  
+  <Step title="Test each node individually">
+    Execute each node separately to make sure it's processing data correctly.
+  </Step>
+  
+  <Step title="Simulate a full event cycle">
+    Run a simulation of the entire event by feeding historical data through your workflow.
+  </Step>
+</Steps>
+
+## Best Practices
+
+- **Error Handling**: Add error handling nodes to prevent workflow failures
+- **Rate Limiting**: Respect the Jotihunt API rate limit (30 requests per minute)
+- **Data Storage**: Store processed data to avoid duplicate processing
+- **Notifications**: Set up critical error notifications for your team
+- **Manual Override**: Include options for manual intervention and correction
+- **Testing**: Test thoroughly with historical data before the live event
+
+## Advanced Integration Ideas
+
+Here are some additional ways to extend your n8n Jotihunt automation:
+
+<CardGroup cols={2}>
+  <Card
+    title="Geographic Analysis"
+    icon="map-location-dot"
+  >
+    Connect hint locations to mapping services to visualize fox team patterns
+  </Card>
+  <Card
+    title="Team Coordination"
+    icon="users-gear"
+  >
+    Automatically assign tasks to team members based on their skills and availability
+  </Card>
+  <Card
+    title="Historical Data Analysis"
+    icon="chart-line"
+  >
+    Track patterns from previous years to predict fox team behavior
+  </Card>
+  <Card
+    title="Mobile Notifications"
+    icon="mobile-screen"
+  >
+    Send critical updates directly to your hunting teams in the field
+  </Card>
+</CardGroup>
+
+## Conclusion
+
+By automating your Jotihunt workflow with n8n, you can significantly improve your team's efficiency, reduce manual monitoring, and enable faster responses to new information. The combination of real-time API monitoring, AI analysis, and integrated notifications creates a powerful advantage for any Jotihunt team.
+
+Remember to respect the Jotihunt API rate limits and to thoroughly test your workflow before the event.
+
+<Card
+  title="Need Help?"
+  icon="circle-question"
+  href="https://jotihunt.nl/contact"
+>
+  If you have questions about the Jotihunt API or need assistance, contact the Jotihunt organization.
+</Card>
