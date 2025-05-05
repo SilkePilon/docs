@@ -15,6 +15,8 @@ The Jotihunt API follows RESTful principles and provides data in JSON format. Th
 https://jotihunt.nl/api/2.0
 ```
 
+<Warning>The API implements rate limiting to ensure fair usage. Each client is limited to 30 requests per minute. If you exceed this limit, you'll receive a `429 Too Many Requests` response.</Warning>
+
 The API is organized around three main resources:
 
 <CardGroup cols={3}>
@@ -39,19 +41,26 @@ The API is organized around three main resources:
   >
     Retrieve game announcements, hints, and assignments
   </Card>
+  
 </CardGroup>
-
+<Card
+    title="Admin (not documented yet)"
+    icon="lock"
+    href="/api-reference/admin"
+    disabled
+  >
+    Submit hints, and assignments (restricted access)
+  </Card>
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens.
-
-```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" https://jotihunt.nl/api/2.0/subscriptions
-```
+The public endpoints listed in this documentation (Subscriptions, Areas, Articles) are available without authentication.
 
 <Note>
-  You'll need to register for a Jotihunt account and request API access to receive your authentication token.
+  There are additional administrative endpoints for scouting group admins to submit assignments, hints, and other content. 
+  These restricted endpoints require authentication using Bearer tokens and are not documented here.
 </Note>
+
+If you are a scouting group admin needing to access these restricted endpoints, please contact the Jotihunt organization for access credentials and documentation.
 
 ## Response Format
 
@@ -117,7 +126,7 @@ Our API is documented using the OpenAPI 3.1.0 specification format. You can view
 
 ## Rate Limiting
 
-The API implements rate limiting to ensure fair usage. Each client is limited to 60 requests per minute. If you exceed this limit, you'll receive a `429 Too Many Requests` response.
+The API implements rate limiting to ensure fair usage. Each client is limited to 30 requests per minute. If you exceed this limit, you'll receive a `429 Too Many Requests` response.
 
 ## Error Handling
 

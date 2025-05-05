@@ -13,11 +13,6 @@
       "url": "https://jotihunt.nl/api/2.0"
     }
   ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
   "paths": {
     "/subscriptions": {
       "get": {

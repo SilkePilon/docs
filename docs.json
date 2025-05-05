@@ -44,14 +44,19 @@
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "JotiHunt Public Endpoints",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoint/get-subscriptions",
+              "api-reference/endpoint/get-areas",
+              "api-reference/endpoint/get-articles"
             ]
-          }
+          },
+          {
+            "group": "JotiHunt Admin Endpoints",
+            "pages": [
+              
+            ]
+          } 
         ]
       }
     ],
