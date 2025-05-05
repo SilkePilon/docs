@@ -4,37 +4,51 @@ openapi: get /subscriptions
 
 ## Use Cases
 
-The `/subscriptions` endpoint allows you to retrieve information about available subscription options for the Jotihunt platform. Common use cases include:
+The `/subscriptions` endpoint allows you to retrieve information about scouting groups that are subscribed to the Jotihunt platform. Common use cases include:
 
-- **Team Registration**: Check available subscription options before registering your team.
-- **Pricing Information**: Display subscription pricing and features in your custom application.
-- **Subscription Comparisons**: Create a comparison table of different subscription tiers.
-- **Budget Planning**: Help teams plan their budget by providing subscription cost information.
+- **Team Overview**: View all participating scouting groups and their locations
+- **Points Tracking**: Monitor photo assignment points for different groups
+- **Area Management**: Check which areas are assigned to which groups
+- **Location Based Features**: Build location-aware features using group coordinates
 
 ## Code Examples
 
 <CodeGroup>
 ```javascript subscription-display.js
-// Using fetch to retrieve and display subscription options
+// Using fetch to retrieve and display scouting group subscriptions
 fetch('https://jotihunt.nl/api/subscriptions')
   .then(response => response.json())
-  .then(data => {
-    console.log(`Found ${data.length} subscription options`);
+  .then(response => {
+    const data = response.data;
+    console.log(`Found ${data.length} scouting groups`);
     
-    // Example: Sort subscriptions by price
-    const sortedByPrice = [...data].sort((a, b) => a.price - b.price);
+    // Example: Group subscriptions by city
+    const groupsByCity = data.reduce((acc, sub) => {
+      (acc[sub.city] = acc[sub.city] || []).push(sub);
+      return acc;
+    }, {});
     
-    // Display subscription options in a formatted way
-    sortedByPrice.forEach(sub => {
-      console.log(`${sub.name}: €${sub.price}`);
-      console.log(`  Features: ${sub.features.join(', ')}`);
-      console.log(`  Available until: ${new Date(sub.availableUntil).toLocaleDateString()}`);
-      console.log('---');
+    // Display subscriptions grouped by city
+    Object.entries(groupsByCity).forEach(([city, groups]) => {
+      console.log(`\n${city} (${groups.length} groups):`);
+      groups.forEach(group => {
+        console.log(`  - ${group.name}`);
+        console.log(`    Address: ${group.street} ${group.housenumber}${group.housenumber_addition || ''}`);
+        console.log(`    Points: ${group.photo_assignment_points || 0}`);
+        if (group.area) console.log(`    Area: ${group.area}`);
+      });
     });
     
-    // Find premium subscriptions
-    const premiumOptions = data.filter(sub => sub.tier === 'premium');
-    console.log(`Premium options: ${premiumOptions.length}`);
+    // Find groups with the most photo assignment points
+    const topGroups = [...data]
+      .filter(group => group.photo_assignment_points != null)
+      .sort((a, b) => b.photo_assignment_points - a.photo_assignment_points)
+      .slice(0, 3);
+      
+    console.log('\nTop 3 groups by points:');
+    topGroups.forEach(group => 
+      console.log(`${group.name}: ${group.photo_assignment_points} points`)
+    );
   })
   .catch(error => {
     console.error('Error fetching subscriptions:', error);
@@ -42,110 +56,159 @@ fetch('https://jotihunt.nl/api/subscriptions')
 ```
 
 ```python subscription_analyzer.py
-# Using requests to retrieve and analyze subscription options
 import requests
-from datetime import datetime
+from typing import Dict, List
+from dataclasses import dataclass
 from tabulate import tabulate
+
+@dataclass
+class ScoutingGroup:
+    name: str
+    city: str
+    address: str
+    points: int
+    area: str
+    lat: str
+    long: str
 
 response = requests.get('https://jotihunt.nl/api/subscriptions')
 if response.status_code == 200:
-    subscriptions = response.json()
-    print(f'Found {len(subscriptions)} subscription options')
+    data = response.json()['data']
     
-    # Example: Create a comparison table
-    table_data = []
-    headers = ['Name', 'Price (€)', 'Tier', 'Available Until']
+    # Convert to ScoutingGroup objects for easier handling
+    groups = [
+        ScoutingGroup(
+            name=sub['name'],
+            city=sub['city'],
+            address=f"{sub['street']} {sub['housenumber']}{sub.get('housenumber_addition', '')}",
+            points=sub.get('photo_assignment_points', 0) or 0,
+            area=sub.get('area', 'Not assigned'),
+            lat=sub['lat'],
+            long=sub['long']
+        )
+        for sub in data
+    ]
     
-    for sub in subscriptions:
-        # Format the date
-        available_until = datetime.fromisoformat(sub['availableUntil']).strftime('%d-%m-%Y')
-        
-        # Add subscription to table
-        table_data.append([
-            sub['name'],
-            sub['price'],
-            sub['tier'],
-            available_until
-        ])
+    # Create overview table
+    table_data = [
+        [
+            group.name,
+            group.city,
+            group.address,
+            group.points,
+            group.area
+        ]
+        for group in groups
+    ]
     
-    # Print formatted table
+    headers = ['Name', 'City', 'Address', 'Points', 'Area']
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
     
-    # Find the cheapest option
-    cheapest = min(subscriptions, key=lambda x: x['price'])
-    print(f"Cheapest option: {cheapest['name']} (€{cheapest['price']})")
+    # Area statistics
+    area_counts: Dict[str, int] = {}
+    for group in groups:
+        if group.area:
+            area_counts[group.area] = area_counts.get(group.area, 0) + 1
+            
+    print('\nGroups per area:')
+    for area, count in area_counts.items():
+        print(f'{area}: {count} groups')
+        
+    # Points statistics
+    total_points = sum(group.points for group in groups)
+    avg_points = total_points / len(groups) if groups else 0
+    print(f'\nTotal points: {total_points}')
+    print(f'Average points per group: {avg_points:.1f}')
 else:
     print(f'Error: {response.status_code}')
 ```
 
 ```java SubscriptionManager.java
-// Using Java HttpClient (Java 11+) to manage subscription information
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SubscriptionManager {
+    record ScoutingGroup(
+        String name,
+        String accommodation,
+        String street,
+        String housenumber,
+        String housenumberAddition,
+        String postcode,
+        String city,
+        String lat,
+        String longitude,
+        Integer photoAssignmentPoints,
+        String area
+    ) {}
+
     public static void main(String[] args) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://jotihunt.nl/api/subscriptions"))
-                .build();
-                
+            .uri(URI.create("https://jotihunt.nl/api/subscriptions"))
+            .build();
+            
         // Synchronous call for subscription data
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = client.send(request, 
+            HttpResponse.BodyHandlers.ofString());
         
         // Parse JSON response
         ObjectMapper mapper = new ObjectMapper();
-        List<Map<String, Object>> subscriptions = mapper.readValue(
-            response.body(), 
-            new TypeReference<List<Map<String, Object>>>(){}
-        );
+        var jsonNode = mapper.readTree(response.body());
+        var data = jsonNode.get("data");
         
-        System.out.println("Available subscription options: " + subscriptions.size());
-        
-        // Example: Find subscriptions by tier
-        Map<String, List<Map<String, Object>>> subscriptionsByTier = subscriptions.stream()
-            .collect(Collectors.groupingBy(sub -> (String) sub.get("tier")));
-            
-        // Print subscription tiers
-        subscriptionsByTier.forEach((tier, subs) -> {
-            System.out.println("\n" + tier.toUpperCase() + " TIER (" + subs.size() + " options):");
-            subs.forEach(sub -> {
-                System.out.println("  - " + sub.get("name") + " (€" + sub.get("price") + ")");
-            });
+        List<ScoutingGroup> groups = new ArrayList<>();
+        data.forEach(node -> {
+            try {
+                groups.add(new ScoutingGroup(
+                    node.get("name").asText(),
+                    node.get("accommodation").asText(),
+                    node.get("street").asText(),
+                    node.get("housenumber").asText(),
+                    node.get("housenumber_addition").asText(),
+                    node.get("postcode").asText(),
+                    node.get("city").asText(),
+                    node.get("lat").asText(),
+                    node.get("long").asText(),
+                    node.get("photo_assignment_points").isNull() ? 
+                        null : node.get("photo_assignment_points").asInt(),
+                    node.get("area").isNull() ? null : node.get("area").asText()
+                ));
+            } catch (Exception e) {
+                System.err.println("Error parsing group: " + e.getMessage());
+            }
         });
         
-        // Find best value subscription (most features per euro)
-        Optional<Map<String, Object>> bestValue = subscriptions.stream()
-            .max(Comparator.comparingDouble(sub -> {
-                int features = ((List<?>) sub.get("features")).size();
-                double price = Double.parseDouble(sub.get("price").toString());
-                return features / price;
-            }));
+        System.out.println("Total groups: " + groups.size());
+        
+        // Group by area
+        Map<String, Long> groupsByArea = groups.stream()
+            .filter(g -> g.area() != null)
+            .collect(Collectors.groupingBy(
+                ScoutingGroup::area,
+                Collectors.counting()
+            ));
             
-        bestValue.ifPresent(sub -> {
-            System.out.println("\nBest value subscription: " + sub.get("name"));
-            System.out.println("  Price: €" + sub.get("price"));
-            System.out.println("  Features: " + ((List<?>) sub.get("features")).size());
+        System.out.println("\nGroups per area:");
+        groupsByArea.forEach((area, count) -> 
+            System.out.printf("%s: %d groups%n", area, count));
             
-            // Format available until date
-            String availableUntil = (String) sub.get("availableUntil");
-            LocalDate date = LocalDate.parse(availableUntil);
-            String formattedDate = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        // Points analysis
+        DoubleSummaryStatistics pointStats = groups.stream()
+            .filter(g -> g.photoAssignmentPoints() != null)
+            .mapToDouble(g -> g.photoAssignmentPoints())
+            .summaryStatistics();
             
-            System.out.println("  Available until: " + formattedDate);
-        });
+        System.out.println("\nPoints statistics:");
+        System.out.printf("Average points: %.1f%n", pointStats.getAverage());
+        System.out.printf("Highest points: %d%n", (int)pointStats.getMax());
+        System.out.printf("Lowest points: %d%n", (int)pointStats.getMin());
+        System.out.printf("Total groups with points: %d%n", pointStats.getCount());
     }
 }
 ```
