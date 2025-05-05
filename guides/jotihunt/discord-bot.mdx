@@ -129,7 +129,7 @@ Before starting, make sure you have:
   <Step title="Create Basic Bot Structure">
     Create a new file `bot.js`:
 
-    ```javascript
+    ```javascript bot.js
     require('dotenv').config();
     const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
@@ -150,10 +150,16 @@ Before starting, make sure you have:
 
     Create a `.env` file:
 
-    ```env
+    <Warning>
+        Never commit your `.env` file to version control. Make sure to add <code>.env</code> to your <code>.gitignore</code>.
+    </Warning>
+
+    ```env .env
     DISCORD_TOKEN=your_bot_token_here
     NOTIFICATION_CHANNEL=your_channel_id
     ```
+
+    
   </Step>
 </Steps>
 
@@ -483,7 +489,7 @@ module.exports = {
 ```
 
 <Warning>
-  Never commit your `.env` file or expose your bot token. Always use environment variables for sensitive information.
+    Never commit your `.env` file to version control. Make sure to add <code>.env</code> to your <code>.gitignore</code>.
 </Warning>
 
 ## Useful Commands
