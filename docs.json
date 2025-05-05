@@ -63,9 +63,9 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "GitHub",
+          "href": "https://github.com/SilkePilon/",
+          "icon": "github"
         },
         {
           "anchor": "Community",
