@@ -4,17 +4,9 @@ description: 'Learn how to integrate the Jotihunt API with n8n for automated wor
 icon: 'robot'
 ---
 
-<script src="https://cdn.jsdelivr.net/npm/@webcomponents/webcomponentsjs@2.0.0/webcomponents-loader.js"></script>
-<script src="https://www.unpkg.com/lit@2.0.0-rc.2/polyfill-support.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/@n8n_io/n8n-demo-component/n8n-demo.bundled.js"></script>
-
 # Automating Jotihunt with n8n
 
 [n8n](https://n8n.io/) is a powerful workflow automation platform that can help Jotihunt teams automate tasks, monitor API updates, and streamline coordination. This guide will show you how to integrate the Jotihunt API with n8n to create powerful automation workflows.
-
-<n8n-demo workflow='{"nodes":[{"parameters":{"rule":{"interval":[{"field":"seconds","minutesInterval":5}]},"options":{}},"name":"Schedule Trigger","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1,"position":[250,300]},{"parameters":{"url":"https://jotihunt.nl/api/2.0/articles","options":{}},"name":"Jotihunt Articles","type":"n8n-nodes-base.httpRequest","typeVersion":4.1,"position":[450,300]}],"connections":{"Schedule Trigger":{"main":[[{"node":"Jotihunt Articles","type":"main","index":0}]]}}}' frame="true"></n8n-demo>
-
-💡 _Double-click a node to see its settings, or paste this workflow's code into n8n to import it_
 
 ## What You Can Automate
 
@@ -144,11 +136,6 @@ You can enhance your Jotihunt workflow with AI to automatically analyze new hint
 2. Uses AI to analyze content and determine actions
 3. Creates tasks in ClickUp
 4. Sends notifications to Google Chat
-
-<n8n-demo workflow='{"nodes":[{"parameters":{"rule":{"interval":[{"field":"seconds","minutesInterval":5}]}},"name":"Schedule Trigger","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1,"position":[250,300]},{"parameters":{"url":"https://jotihunt.nl/api/2.0/articles","options":{}},"name":"Jotihunt Articles","type":"n8n-nodes-base.httpRequest","typeVersion":4.1,"position":[450,300]},{"parameters":{"promptType":"define","text":"Analyze this Jotihunt article:\n\nTitle: {{$node[\"Jotihunt Articles\"].json[\"data\"][0][\"title\"]}}\nType: {{$node[\"Jotihunt Articles\"].json[\"data\"][0][\"type\"]}}\nContent: {{$node[\"Jotihunt Articles\"].json[\"data\"][0][\"message\"][\"content\"]}}"},"name":"AI Agent","type":"@n8n/n8n-nodes-langchain.agent","typeVersion":1.9,"position":[650,300]},{"parameters":{"list":"JotiHunt","name":"={{$node[\"AI Agent\"].json[\"taskTitle\"]}}","description":"={{$node[\"AI Agent\"].json[\"taskDescription\"]}}"},"name":"ClickUp Task","type":"n8n-nodes-base.clickUp","typeVersion":2,"position":[850,200]},{"parameters":{"spaceId":"JotihuntTeam","message":"={{$node[\"AI Agent\"].json[\"notification\"]}}"},"name":"Google Chat","type":"n8n-nodes-base.googleChat","typeVersion":1,"position":[850,400]}],"connections":{"Schedule Trigger":{"main":[[{"node":"Jotihunt Articles","type":"main","index":0}]]},"Jotihunt Articles":{"main":[[{"node":"AI Agent","type":"main","index":0}]]},"AI Agent":{"main":[[{"node":"ClickUp Task","type":"main","index":0},{"node":"Google Chat","type":"main","index":0}]]}}}'
-frame="true"></n8n-demo>
-
-💡 _This demo shows a complete AI-powered workflow. Double-click nodes to explore settings._
 
 <Steps>
   <Step title="Set up the basic workflow">
@@ -356,11 +343,6 @@ Your AI processing node should format messages differently based on content type
 
 Before the actual Jotihunt event, you should test your workflow thoroughly:
 
-<n8n-demo workflow='{"nodes":[{"parameters":{"functionCode":"// This is a test function to simulate historical Jotihunt data\nconst mockData = {\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Test Hint: Fox Team Alpha\",\n      \"type\": \"hint\",\n      \"publish_at\": \"2024-10-15T14:30:00Z\",\n      \"message\": {\n        \"content\": \"The fox team was last seen near a windmill with three red blades.\"\n      }\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Opdracht: Creatieve Uitdaging\",\n      \"type\": \"opdracht\",\n      \"publish_at\": \"2024-10-15T15:00:00Z\",\n      \"message\": {\n        \"content\": \"Maak een foto van je team bij een bekend monument in het jachtgebied.\"\n      }\n    }\n  ]\n};\n\nreturn [{\n  json: mockData\n}];"},"name":"Mock Jotihunt Data","type":"n8n-nodes-base.function","typeVersion":1,"position":[250,300]},{"parameters":{},"name":"Process Articles","type":"n8n-nodes-base.function","typeVersion":1,"position":[450,300]},{"parameters":{},"name":"Test Results","type":"n8n-nodes-base.noOp","typeVersion":1,"position":[650,300]}],"connections":{"Mock Jotihunt Data":{"main":[[{"node":"Process Articles","type":"main","index":0}]]},"Process Articles":{"main":[[{"node":"Test Results","type":"main","index":0}]]}}}'
-frame="true"></n8n-demo>
-
-💡 _Testing workflow with simulated Jotihunt data. Double-click nodes to see the mock data setup._
-
 <Steps>
   <Step title="Use test data">
     Set up your workflow with historical data using the Wayback Machine API.
@@ -368,11 +350,11 @@ frame="true"></n8n-demo>
   </Step>
   
   <Step title="Test each node individually">
-    Execute each node separately to make sure it's processing data correctly. You can use the "Execute Node" button in n8n to test individual nodes without running the entire workflow.
+    Execute each node separately to make sure it's processing data correctly.
   </Step>
   
   <Step title="Simulate a full event cycle">
-    Run a simulation of the entire event by feeding historical data through your workflow. Create mock data nodes like in the example above to simulate different API responses.
+    Run a simulation of the entire event by feeding historical data through your workflow.
   </Step>
 </Steps>
 
@@ -415,24 +397,6 @@ Here are some additional ways to extend your n8n Jotihunt automation:
     Send critical updates directly to your hunting teams in the field
   </Card>
 </CardGroup>
-
-## Area Status Monitoring Example
-
-One of the most critical aspects of Jotihunt is monitoring area statuses. Here's a complete workflow that checks for area status changes and immediately alerts your team:
-
-<n8n-demo workflow='{"nodes":[{"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":2}]}},"name":"Every 2 minutes","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1,"position":[250,300]},{"parameters":{"url":"https://jotihunt.nl/api/2.0/areas","options":{}},"name":"Get Areas","type":"n8n-nodes-base.httpRequest","typeVersion":4.1,"position":[450,300]},{"parameters":{"functionCode":"// Compare current status with last known status\nconst areas = $input.json.data;\nconst changedAreas = [];\n\n// Get previously stored statuses (simplified example)\nconst previousStatuses = {\n  \"Alpha\": \"green\",\n  \"Bravo\": \"green\",\n  \"Charlie\": \"green\",\n  \"Delta\": \"green\",\n  \"Echo\": \"green\",\n  \"Foxtrot\": \"green\"\n};\n\n// Check each area for status changes\nfor (const area of areas) {\n  if (area.status !== previousStatuses[area.name]) {\n    changedAreas.push({\n      areaName: area.name,\n      newStatus: area.status,\n      oldStatus: previousStatuses[area.name],\n      message: `⚠️ AREA ${area.name.toUpperCase()} changed from ${previousStatuses[area.name]} to ${area.status}!`\n    });\n  }\n}\n\n// If no changes, return empty array\nif (changedAreas.length === 0) {\n  return [];\n}\n\n// Return changed areas\nreturn changedAreas.map(area => ({ json: area }));"},"name":"Check Status Changes","type":"n8n-nodes-base.function","typeVersion":1,"position":[650,300]},{"parameters":{"conditions":{"string":[{"value1":"={{$json[\"newStatus\"]}}","operation":"equals","value2":"red"}]},"combineOperation":"any"},"name":"Is Status Red?","type":"n8n-nodes-base.if","typeVersion":1,"position":[850,300]},{"parameters":{"chatId":"JotihuntTeam","text":"={{$json[\"message\"]}}\\n\\n🚨 **URGENT: HUNTERS NEEDED IN AREA {{$json[\"areaName\"]}}!**","additionalFields":{}},"name":"Urgent Alert","type":"n8n-nodes-base.telegram","typeVersion":1,"position":[1050,200]},{"parameters":{"chatId":"JotihuntTeam","text":"={{$json[\"message\"]}}","additionalFields":{}},"name":"Standard Alert","type":"n8n-nodes-base.telegram","typeVersion":1,"position":[1050,400]},{"parameters":{},"name":"Update Status DB","type":"n8n-nodes-base.noOp","typeVersion":1,"position":[1250,300]}],"connections":{"Every 2 minutes":{"main":[[{"node":"Get Areas","type":"main","index":0}]]},"Get Areas":{"main":[[{"node":"Check Status Changes","type":"main","index":0}]]},"Check Status Changes":{"main":[[{"node":"Is Status Red?","type":"main","index":0}]]},"Is Status Red?":{"main":[[{"node":"Urgent Alert","type":"main","index":0}],[{"node":"Standard Alert","type":"main","index":0}]]},"Urgent Alert":{"main":[[{"node":"Update Status DB","type":"main","index":0}]]},"Standard Alert":{"main":[[{"node":"Update Status DB","type":"main","index":0}]]}}}'
-frame="true"></n8n-demo>
-
-💡 _This workflow monitors area status changes and sends different alerts based on severity_
-
-## Complete Jotihunt Workflow
-
-For the most dedicated teams, here's a comprehensive workflow that combines all the examples into a complete Jotihunt automation system:
-
-<n8n-demo workflow='{"nodes":[{"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":1}]}},"name":"Check Articles","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1,"position":[250,300]},{"parameters":{"rule":{"interval":[{"field":"minutes","minutesInterval":2}]}},"name":"Check Areas","type":"n8n-nodes-base.scheduleTrigger","typeVersion":1,"position":[250,500]},{"parameters":{"url":"https://jotihunt.nl/api/2.0/articles","options":{}},"name":"Get Articles","type":"n8n-nodes-base.httpRequest","typeVersion":4.1,"position":[450,300]},{"parameters":{"url":"https://jotihunt.nl/api/2.0/areas","options":{}},"name":"Get Areas","type":"n8n-nodes-base.httpRequest","typeVersion":4.1,"position":[450,500]},{"parameters":{"conditions":{"string":[{"value1":"={{$json.data[0].type}}","operation":"equals","value2":"hint"}]},"combineOperation":"any"},"name":"Is Hint?","type":"n8n-nodes-base.if","typeVersion":1,"position":[650,300]},{"parameters":{"functionCode":"// Process areas data\nreturn $input;"},"name":"Process Areas","type":"n8n-nodes-base.function","typeVersion":1,"position":[650,500]},{"parameters":{"promptType":"define","text":"Analyze this hint:\n\n{{$json.data[0].message.content}}"},"name":"AI Process Hint","type":"@n8n/n8n-nodes-langchain.agent","typeVersion":1.9,"position":[850,200]},{"parameters":{"promptType":"define","text":"Analyze this assignment:\n\n{{$json.data[0].message.content}}"},"name":"AI Process Assignment","type":"@n8n/n8n-nodes-langchain.agent","typeVersion":1.9,"position":[850,400]},{"parameters":{},"name":"Slack Notification","type":"n8n-nodes-base.slack","typeVersion":1,"position":[1050,300]},{"parameters":{},"name":"Update Database","type":"n8n-nodes-base.noOp","typeVersion":1,"position":[1050,500]}],"connections":{"Check Articles":{"main":[[{"node":"Get Articles","type":"main","index":0}]]},"Check Areas":{"main":[[{"node":"Get Areas","type":"main","index":0}]]},"Get Articles":{"main":[[{"node":"Is Hint?","type":"main","index":0}]]},"Get Areas":{"main":[[{"node":"Process Areas","type":"main","index":0}]]},"Is Hint?":{"main":[[{"node":"AI Process Hint","type":"main","index":0}],[{"node":"AI Process Assignment","type":"main","index":0}]]},"AI Process Hint":{"main":[[{"node":"Slack Notification","type":"main","index":0}]]},"AI Process Assignment":{"main":[[{"node":"Slack Notification","type":"main","index":0}]]},"Process Areas":{"main":[[{"node":"Update Database","type":"main","index":0}]]}}}'
-frame="true"></n8n-demo>
-
-💡 _This comprehensive workflow handles both article and area monitoring in parallel_
 
 ## Conclusion
 
