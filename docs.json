@@ -23,7 +23,8 @@
           {
             "group": "Welcome",
             "pages": [
-              "index"
+              "index",
+              "about-me"
             ]
           },
           {
