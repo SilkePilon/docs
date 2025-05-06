@@ -47,7 +47,7 @@
             ]
           },
           {
-            "group": "JotiHunt Public Endpoints",
+            "group": "JotiHunt Official Endpoints",
             "pages": [
               "api-reference/endpoint/jotihunt-public/get-subscriptions",
               "api-reference/endpoint/jotihunt-public/get-areas",
@@ -61,7 +61,9 @@
           {
             "group": "JotiHunt Community Endpoints",
             "pages": [
-              "api-reference/endpoint/jotihunt-community-endpoints/get-leaderboard"
+              "api-reference/endpoint/jotihunt-community-endpoints/get-leaderboard",
+              "api-reference/endpoint/jotihunt-community-endpoints/websocket"
+
             ]
           }
         ]
