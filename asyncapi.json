@@ -1,27 +1,61 @@
 {
   "asyncapi": "3.0.0",
   "info": {
-    "title": "game-updates world application",
-    "version": "0.1.0"
+    "title": "Jotihunt Live Updates",
+    "version": "1.0.0",
+    "description": "WebSocket service that broadcasts new articles, area updates, and subscription changes."
   },
   "channels": {
-    "game-updates": {
-      "address": "game-updates",
+    "updates": {
+      "address": "updates",
+      "description": "This WebSocket channel provides real-time updates for Jotihunt data.\n\nClients connected to this channel will receive push notifications whenever new articles (`news`, `hint`, `opdracht`), area status changes, or subscription data updates occur.\n\nThis reduces the need for clients to continuously poll the API, offering a more efficient and responsive experience.",
       "messages": {
-        "saygame-updatesMessage": {
-          "payload": {
-            "type": "string",
-            "pattern": "^game-updates .+$"
-          }
+        "UpdateMessage": {
+          "$ref": "#/components/messages/UpdateMessage"
         }
       }
     }
   },
   "operations": {
-    "receivegame-updates": {
-      "action": "receive",
+    "sendUpdate": {
+      "action": "send",
       "channel": {
-        "$ref": "#/channels/game-updates"
+        "$ref": "#/channels/updates"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/updates/messages/UpdateMessage"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "UpdateMessage": {
+        "summary": "New data update",
+        "description": "Sent when a new article, area update, or subscription is detected",
+        "payload": {
+          "type": "object",
+          "required": ["type", "data", "timestamp"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["news", "hint", "opdracht", "area", "subscription"],
+              "description": "Type of the update"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the update occurred"
+            },
+            "data": {
+              "type": "object",
+              "description": "Content of the update",
+              "properties": {},
+              "additionalProperties": true
+            }
+          }
+        }
       }
     }
   }
