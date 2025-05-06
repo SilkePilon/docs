@@ -23,7 +23,7 @@ fetch('https://jotihunt.nl/api/articles')
     // Process articles - e.g., display the most recent ones
     const recentArticles = data.slice(0, 5);
     recentArticles.forEach(article => {
-      console.log(`${article.title} - ${article.publishDate}`);
+      console.log(`${article.title} - ${article.publish_at}`);
     });
   })
   .catch(error => {

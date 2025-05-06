@@ -2,9 +2,18 @@
 openapi: get /subscriptions
 ---
 
+<Warning>
+Some years the Jotihunt team decides to not publish to which area a group is assigned. In that case the area field will be <code>null</code>.
+This is not a bug. The last time this happened was in 2024.
+</Warning>
+
+<Tip>
+When there is no area assigned to a group, it's a good idea to visit the group and ask them to which area they are assigned.
+</Tip>
+
 ## Use Cases
 
-The `/subscriptions` endpoint allows you to retrieve information about scouting groups that are subscribed to the Jotihunt platform. Common use cases include:
+The `/subscriptions` endpoint allows you to retrieve information about scouting groups that are subscribed (compeeting) to the Jotihunt event. Common use cases include:
 
 - **Team Overview**: View all participating scouting groups and their locations
 - **Points Tracking**: Monitor photo assignment points for different groups

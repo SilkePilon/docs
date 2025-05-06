@@ -2,10 +2,16 @@
 openapi: get /areas
 ---
 
+<Note>
+The <code>status</code> property can be one of the following:
+- <code>green</code> - The area is active and can be hunted.
+- <code>red</code> - The area is inactive and cannot be hunted.
+- <code>orange</code> - The area is going to be red soon. But can still be hunted.
+</Note>
+
 ## Use Cases
 
 The `/areas` endpoint provides information about all the hunting areas in the Jotihunt game. Here are some practical use cases:
-
 - **Interactive Maps**: Create custom maps showing the boundaries of each hunting area.
 - **Team Strategy**: Develop strategies based on area information and team locations.
 - **Location Tracking**: Track which areas your team has visited or needs to visit.
@@ -32,7 +38,7 @@ fetch('https://jotihunt.nl/api/areas')
     });
     
     // Log areas with a specific status
-    const activeAreas = data.filter(area => area.status === 'active');
+    const activeAreas = data.filter(area => area.status === 'green');
     console.log(`Active areas: ${activeAreas.map(a => a.name).join(', ')}`);
   })
   .catch(error => {
@@ -55,7 +61,7 @@ if response.status_code == 200:
     
     # Add markers for each area
     for area in areas:
-        color = 'green' if area['status'] == 'active' else 'red'
+        color = 'green' if area['status'] == 'green' else 'red'
         folium.Marker(
             [area['latitude'], area['longitude']],
             popup=area['name'],
