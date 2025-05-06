@@ -3,18 +3,6 @@ title: 'RSS Feed'
 api: 'GET https://api.jotihunt.live/feed.xml'
 ---
 
-<Note>
-### What is RSS?
-RSS (Really Simple Syndication) is a web feed technology that lets users and applications receive automatic updates from websites they're interested in. Instead of manually checking websites for new content, RSS feeds automatically notify you when new content is available.
-
-**Benefits of Using RSS:**
-- **Automatic Updates**: Get notified instantly when new content is published
-- **Time Saving**: No need to manually check websites for updates
-- **Aggregation**: Combine multiple feeds into a single reader
-- **Standardized Format**: Works with any RSS reader application
-- **Offline Reading**: Most RSS readers support saving content for offline access
-</Note>
-
 <Check>
 ### Community API Endpoint
 This endpoint is part of the community-maintained API running on Vercel's edge network.
@@ -29,6 +17,18 @@ This endpoint is part of the community-maintained API running on Vercel's edge n
 - No rate limits
 - Compatible with all RSS readers
 </Check>
+
+<Note>
+### What is RSS?
+RSS (Really Simple Syndication) is a web feed technology that lets users and applications receive automatic updates from websites they're interested in. Instead of manually checking websites for new content, RSS feeds automatically notify you when new content is available.
+
+**Benefits of Using RSS:**
+- **Automatic Updates**: Get notified instantly when new content is published
+- **Time Saving**: No need to manually check websites for updates
+- **Aggregation**: Combine multiple feeds into a single reader
+- **Standardized Format**: Works with any RSS reader application
+- **Offline Reading**: Most RSS readers support saving content for offline access
+</Note>
 
 <Note>
 ### RSS Feed Usage
@@ -73,6 +73,32 @@ setInterval(fetchJotihuntUpdates, 300000);
 - Respect the feed's TTL (Time To Live) settings
 - Use appropriate update intervals (recommended: 5+ minutes)
 </Warning>
+
+<Note>
+### Recommended RSS Readers
+Here are some popular, free RSS reader applications you can use to subscribe to the Jotihunt feed:
+
+**Desktop Applications:**
+- **NewsFlash** (Windows/Linux) - Modern, fast, and feature-rich
+- **NetNewsWire** (macOS) - Clean, native macOS experience
+- **Thunderbird** (Windows/macOS/Linux) - Email client with RSS capabilities
+- **RSS Guard** (Windows/macOS/Linux) - Lightweight and customizable
+
+**Mobile Applications:**
+- **Feedly** (Android/iOS) - Popular choice with clean interface
+- **Inoreader** (Android/iOS) - Powerful features in free tier
+- **FocusReader** (Android) - Simple and lightweight
+- **NetNewsWire** (iOS) - Free, open-source, and privacy-focused
+
+**Browser-based Readers:**
+- **Feedly Web** - Sync with mobile apps
+- **Inoreader Web** - Works across all devices
+- **The Old Reader** - Simple and reliable
+- **NewsBlur** - Feature-rich web interface
+
+All these options support adding custom RSS feeds and will work with the Jotihunt RSS feed. Simply copy the feed URL:
+<code>https://api.jotihunt.live/feed.xml</code> and add it to your preferred reader.
+</Note>
 
 <Card>
 ### Support This Service
