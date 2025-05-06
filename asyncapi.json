@@ -5,6 +5,12 @@
     "version": "1.0.0",
     "description": "WebSocket service that broadcasts new articles, area updates, and subscription changes."
   },
+  "servers": {
+    "updates": {
+      "host": "echo-websocket.hoppscotch.io",
+      "protocol": "wss"
+    }
+  },
   "channels": {
     "updates": {
       "address": "updates",
@@ -54,7 +60,42 @@
               "properties": {},
               "additionalProperties": true
             }
-          }
+          },
+          "examples": [
+            {
+              "type": "news",
+              "timestamp": "2025-05-06T13:45:00Z",
+              "data": {
+                "id": 101,
+                "title": "New Hunt Starts Now!",
+                "message": {
+                  "content": "The hunt has officially started. Good luck!"
+                },
+                "publish_at": "2025-05-06T13:44:59Z"
+              }
+            },
+            {
+              "type": "area",
+              "timestamp": "2025-05-06T14:00:00Z",
+              "data": {
+                "name": "Groningen",
+                "status": "red",
+                "updated_at": "2025-05-06T13:59:45Z"
+              }
+            },
+            {
+              "type": "subscription",
+              "timestamp": "2025-05-06T14:05:00Z",
+              "data": {
+                "name": "Scouting Phoenix",
+                "area": "Utrecht",
+                "lat": "52.0907",
+                "long": "5.1214",
+                "photo_assignment_points": 15,
+                "city": "Utrecht"
+              }
+            }
+          ]
         }
       }
     }
