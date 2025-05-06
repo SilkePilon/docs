@@ -47,7 +47,7 @@
             "type": {
               "type": "string",
               "enum": ["news", "hint", "opdracht", "area", "subscription"],
-              "description": "Type of the update"
+              "description": "Type of the update can be one of the following: `news`, `hint`, `opdracht`, `area`, or `subscription`."
             },
             "timestamp": {
               "type": "string",
@@ -67,9 +67,9 @@
               "timestamp": "2025-05-06T13:45:00Z",
               "data": {
                 "id": 101,
-                "title": "New Hunt Starts Now!",
+                "title": "Lorim ipsum dolor sit amet",
                 "message": {
-                  "content": "The hunt has officially started. Good luck!"
+                  "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                 },
                 "publish_at": "2025-05-06T13:44:59Z"
               }
@@ -87,8 +87,8 @@
               "type": "subscription",
               "timestamp": "2025-05-06T14:05:00Z",
               "data": {
-                "name": "Scouting Phoenix",
-                "area": "Utrecht",
+                "name": "Scouting Alexandergroep",
+                "area": "Ermelo",
                 "lat": "52.0907",
                 "long": "5.1214",
                 "photo_assignment_points": 15,
