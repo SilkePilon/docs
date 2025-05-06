@@ -53,6 +53,35 @@ The API is organized around three main resources:
   >
     Submit hints, and assignments (restricted access)
   </Card>
+## Website Infrastructure
+
+Jotihunt.net is hosted on DigitalOcean's cloud infrastructure and managed through Laravel Forge for seamless deployment and server management.
+
+### Technology Stack
+
+<CardGroup cols={2}>
+  <Card title="Web Server">
+    **Nginx** serves as our primary web server, providing high performance and reliability
+  </Card>
+  <Card title="Analytics">
+    **Google Analytics** helps us track user behavior and improve the platform
+  </Card>
+  <Card title="Frontend Framework">
+    **Alpine.js** powers our lightweight, reactive JavaScript interactions
+  </Card>
+  <Card title="Core Language">
+    **C** is used for critical performance-sensitive components
+  </Card>
+</CardGroup>
+
+### Hosting Architecture
+
+- **Server**: DigitalOcean Droplet running Ubuntu LTS
+- **Deployment**: Automated via Laravel Forge
+- **SSL**: Let's Encrypt auto-renewal
+- **CDN**: DigitalOcean Edge Network
+- **Database**: MySQL (version unknown)
+
 ## Authentication
 
 The public endpoints listed in this documentation (Subscriptions, Areas, Articles) are available without authentication.
