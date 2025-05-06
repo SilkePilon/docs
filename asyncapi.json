@@ -1,0 +1,28 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "game-updates world application",
+    "version": "0.1.0"
+  },
+  "channels": {
+    "game-updates": {
+      "address": "game-updates",
+      "messages": {
+        "saygame-updatesMessage": {
+          "payload": {
+            "type": "string",
+            "pattern": "^game-updates .+$"
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "receivegame-updates": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/game-updates"
+      }
+    }
+  }
+}

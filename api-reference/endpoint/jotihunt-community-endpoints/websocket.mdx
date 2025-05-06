@@ -1,17 +1,18 @@
 ---
 title: "Websocket Channel"
-asyncapi: "api-reference/jotihunt/asyncapi.json updates"
+asyncapi: "/asyncapi.json game-updates"
 ---
 
 <Check>
 ### Real-time Updates WebSocket
-Connect to our community-maintained WebSocket endpoint to receive instant updates without polling the REST API.
+Connect to our community-maintained WebSocket endpoint to receive instant updates and participate in article discussions.
 
 **WebSocket URL:**
 <code>wss://api.jotihunt.live/ws</code>
 
 **Features:**
-- Real-time data updates
+- Real-time game updates (hints, assignments, articles)
+- Article discussion chat system
 - No authentication required
 - Automatic reconnection
 - Low latency delivery
@@ -19,8 +20,8 @@ Connect to our community-maintained WebSocket endpoint to receive instant update
 </Check>
 
 <Note>
-### Usage Example
-Here's a simple example of connecting to the WebSocket:
+### Game Updates Channel
+Here's an example of connecting to the game updates channel:
 
 ```javascript
 const ws = new WebSocket('wss://api.jotihunt.live/ws');
@@ -31,15 +32,86 @@ ws.onopen = () => {
 
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
-  console.log('Received update:', data);
+  
+  switch (data.type) {
+    case 'hint':
+      console.log('New hint for area:', data.data.area);
+      console.log('Hint content:', data.data.content);
+      break;
+      
+    case 'assignment':
+      console.log('New assignment:', data.data.title);
+      console.log('Points:', data.data.points);
+      console.log('Description:', data.data.description);
+      break;
+      
+    case 'article':
+      console.log('New article:', data.data.title);
+      console.log('Category:', data.data.category);
+      break;
+  }
+};
+
+// Error handling
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose = () => {
+  console.log('Connection closed, attempting to reconnect...');
+  setTimeout(() => {
+    // Reconnect logic
+  }, 5000);
 };
 ```
+</Note>
 
-The WebSocket server runs on dedicated infrastructure to ensure 24/7 availability and minimal latency.
+<Note>
+### Article Chat Channel
+Example of using the article chat system:
+
+```javascript
+const chatWs = new WebSocket('wss://api.jotihunt.live/ws');
+
+// Listen for chat messages
+chatWs.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  if (data.type === 'chat') {
+    console.log(`${data.data.username}: ${data.data.message}`);
+    
+    if (data.data.replyTo) {
+      console.log('Replying to earlier message');
+    }
+  }
+};
+
+// Send a chat message
+function sendChatMessage(articleId, message, replyToId = null) {
+  const chatMessage = {
+    type: 'chat',
+    data: {
+      articleId: articleId,
+      message: message,
+      userId: 'your-user-id', // Replace with actual user ID
+      username: 'your-username', // Replace with actual username
+      replyTo: replyToId
+    },
+    timestamp: new Date().toISOString()
+  };
+  
+  chatWs.send(JSON.stringify(chatMessage));
+}
+```
 </Note>
 
 <Warning>
-While the WebSocket connection is free to use, please implement appropriate error handling and reconnection logic in your applications to ensure smooth operation.
+### Implementation Guidelines
+- Implement proper error handling and reconnection logic
+- Handle all message types appropriately
+- Validate message format before sending
+- Keep track of connection state
+- Consider implementing an exponential backoff for reconnection attempts
 </Warning>
 
 <Card>

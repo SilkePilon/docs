@@ -63,7 +63,6 @@
             "pages": [
               "api-reference/endpoint/jotihunt-community-endpoints/get-leaderboard",
               "api-reference/endpoint/jotihunt-community-endpoints/websocket"
-
             ]
           }
         ]
