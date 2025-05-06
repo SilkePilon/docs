@@ -1,0 +1,86 @@
+---
+title: 'RSS Feed'
+api: 'GET https://api.jotihunt.live/feed.xml'
+---
+
+<Note>
+### What is RSS?
+RSS (Really Simple Syndication) is a web feed technology that lets users and applications receive automatic updates from websites they're interested in. Instead of manually checking websites for new content, RSS feeds automatically notify you when new content is available.
+
+**Benefits of Using RSS:**
+- **Automatic Updates**: Get notified instantly when new content is published
+- **Time Saving**: No need to manually check websites for updates
+- **Aggregation**: Combine multiple feeds into a single reader
+- **Standardized Format**: Works with any RSS reader application
+- **Offline Reading**: Most RSS readers support saving content for offline access
+</Note>
+
+<Check>
+### Community API Endpoint
+This endpoint is part of the community-maintained API running on Vercel's edge network.
+
+**Base URL:**
+<code>https://api.jotihunt.live</code>
+
+**Features:**
+- Real-time article updates via RSS
+- No authentication required
+- High availability
+- No rate limits
+- Compatible with all RSS readers
+</Check>
+
+<Note>
+### RSS Feed Usage
+Subscribe to our RSS feed to receive instant updates about:
+- New articles and news posts
+- Hunt hints and clues
+- Assignment updates
+- Game status changes
+
+Here's an example of parsing the RSS feed using JavaScript:
+
+```javascript
+async function fetchJotihuntUpdates() {
+  const response = await fetch('https://api.jotihunt.live/feed.xml');
+  const xmlText = await response.text();
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+  
+  const items = xmlDoc.getElementsByTagName('item');
+  
+  for (const item of items) {
+    const title = item.querySelector('title').textContent;
+    const link = item.querySelector('link').textContent;
+    const pubDate = item.querySelector('pubDate').textContent;
+    const category = item.querySelector('category').textContent;
+    
+    console.log(`New ${category}: ${title}`);
+    console.log(`Published: ${new Date(pubDate).toLocaleString()}`);
+    console.log(`Read more: ${link}\n`);
+  }
+}
+
+// Check for updates every 5 minutes
+setInterval(fetchJotihuntUpdates, 300000);
+```
+</Note>
+
+<Warning>
+### Implementation Guidelines
+- Implement proper error handling for feed parsing
+- Consider caching feed contents to reduce server load
+- Respect the feed's TTL (Time To Live) settings
+- Use appropriate update intervals (recommended: 5+ minutes)
+</Warning>
+
+<Card>
+### Support This Service
+Our community API infrastructure requires ongoing maintenance and hosting costs. If you find this service valuable, please consider supporting it:
+
+**Donation Options:**
+- GitHub Sponsors: [github.com/sponsors/SilkePilon](https://github.com/sponsors/SilkePilon)
+- PayPal: [paypal.me/silkepilon](https://paypal.me/silkepilon)
+
+Your support helps keep this free service running for everyone! 💚
+</Card>
