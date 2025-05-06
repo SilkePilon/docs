@@ -66,50 +66,11 @@ ws.onclose = () => {
 ```
 </Note>
 
-<Note>
-### Article Chat Channel
-Example of using the article chat system:
-
-```javascript
-const chatWs = new WebSocket('wss://api.jotihunt.live/ws');
-
-// Listen for chat messages
-chatWs.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  
-  if (data.type === 'chat') {
-    console.log(`${data.data.username}: ${data.data.message}`);
-    
-    if (data.data.replyTo) {
-      console.log('Replying to earlier message');
-    }
-  }
-};
-
-// Send a chat message
-function sendChatMessage(articleId, message, replyToId = null) {
-  const chatMessage = {
-    type: 'chat',
-    data: {
-      articleId: articleId,
-      message: message,
-      userId: 'your-user-id', // Replace with actual user ID
-      username: 'your-username', // Replace with actual username
-      replyTo: replyToId
-    },
-    timestamp: new Date().toISOString()
-  };
-  
-  chatWs.send(JSON.stringify(chatMessage));
-}
-```
-</Note>
 
 <Warning>
 ### Implementation Guidelines
 - Implement proper error handling and reconnection logic
 - Handle all message types appropriately
-- Validate message format before sending
 - Keep track of connection state
 - Consider implementing an exponential backoff for reconnection attempts
 </Warning>

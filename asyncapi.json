@@ -7,7 +7,7 @@
   },
   "servers": {
     "updates": {
-      "host": "echo-websocket.hoppscotch.io",
+      "host": "api.jotihunt.live/ws",
       "protocol": "wss"
     }
   },
