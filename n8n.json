@@ -1,0 +1,174 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Summary API",
+    "description": "API for generating summary reports from support items",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://n8n.bluey.dev",
+      "description": "Production server"
+    },
+    {
+      "url": "https://n8n.bluey.dev",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/webhook/summary": {
+      "get": {
+        "summary": "Generate a summary report (Production)",
+        "description": "Generate a formatted summary report based on the provided support items and comments",
+        "operationId": "generateSummary",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SummaryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Summary generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input data"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/webhook-test/summary": {
+      "get": {
+        "summary": "Generate a summary report (Development)",
+        "description": "Development endpoint for generating a formatted summary report based on the provided support items and comments",
+        "operationId": "generateSummaryTest",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SummaryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Summary generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid input data"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Comment": {
+        "type": "object",
+        "required": [
+          "id",
+          "content"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the comment",
+            "example": 150
+          },
+          "content": {
+            "type": "string",
+            "description": "Content of the comment",
+            "example": "opgelost dmv reset router"
+          }
+        }
+      },
+      "Item": {
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "comments"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier for the support item",
+            "example": 2
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the support item",
+            "example": "wifi kapot"
+          },
+          "comments": {
+            "type": "array",
+            "description": "List of comments associated with this item",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          }
+        }
+      },
+      "SummaryRequest": {
+        "type": "object",
+        "required": [
+          "preferdLang",
+          "items"
+        ],
+        "properties": {
+          "preferdLang": {
+            "type": "string",
+            "description": "Preferred language for the summary",
+            "example": "Dutch"
+          },
+          "items": {
+            "type": "array",
+            "description": "List of support items to include in the summary",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          }
+        }
+      },
+      "SummaryResponse": {
+        "type": "object",
+        "required": [
+          "summary"
+        ],
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "Formatted summary text with placeholders for client name, company name, and support agent name",
+            "example": "Hi [Client Name],\n\nHierbij een overzicht van de werkzaamheden die we vandaag bij [Company Name] hebben uitgevoerd.\n\n**Supportvragen**\nWe hebben de volgende opvallende vragen opgepakt en opgelost:\n* **#2** – wifi kapot. De wifi-verbinding is hersteld door de router te resetten. \n\n**Onboarding medewerkers**\nEr zijn geen nieuwe medewerkers gestart bij [Company Name].\n\n**Offboarding medewerkers**\nEr zijn geen mensen bij [Company Name] uitdienst getreden.\n\n**Projecten cq onderhoud**\nEr zijn geen projecten uitgevoerd.\n\n**Notion-artikel**\nVandaag is er geen nieuw Notion-artikel geschreven.\n\n**Openstaande Zaken voor Volgend Bezoek**\nEr zijn geen openstaande zaken voor het volgende bezoek.\n\nMocht er naar aanleiding van deze recap nog vragen zijn, dan hoor ik het graag.\n\nMet vriendelijke groet,\n[Support Agent Name]\n**Cloudcarrier\nDe werkplek waar je blij van wordt. Dat regelen wij voor je.\n\nWeb** | https://cloudcarrier.nl\nSupport. 088 25 22 020 support@cloudcarrier.nl\nAlgemeen. 088 25 22 000 info@cloudcarrier.nl\nSales. 088 25 22 010 sales@cloudcarrier.nl\nProjecten. 088 25 22 015"
+          }
+        }
+      }
+    }
+  }
+}

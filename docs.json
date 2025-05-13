@@ -67,8 +67,32 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "n8n API Reference",
+        "groups": [
+          {
+            "group": "API Documentation",
+            "pages": [
+              "api-reference/n8n/introduction"
+            ]
+          },
+          {
+            "group": "n8n Testing Endpoints",
+            "pages": [
+              "api-reference/endpoint/n8n-testing/get-summary"
+            ]
+          },
+          {
+            "group": "n8n Production Endpoints",
+            "pages": [
+              "api-reference/endpoint/n8n-prod/get-summary"
+            ]
+          }
+        ]
       }
     ],
+    
     "global": {
       "anchors": [
         {
