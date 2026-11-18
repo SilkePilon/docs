@@ -1,0 +1,20 @@
+---
+title: Homelab
+description: A 7-node k3s cluster, managed with Argo CD.
+---
+
+The homelab is a [k3s](https://k3s.io) cluster of three HP minis and four
+Raspberry Pi 5s. [Argo CD](https://argo-cd.readthedocs.io) keeps it equal to
+the [SilkePilon/homelab](https://github.com/SilkePilon/homelab) repo: change a
+YAML file, push, done.
+
+## Building blocks
+
+- **GitOps:** an Argo CD ApplicationSet turns every folder in `apps/<group>/<app>` into an app.
+- **Secrets:** stored in Infisical, synced into the cluster by External Secrets Operator.
+- **Storage:** Longhorn, three replicas per volume.
+- **Traffic:** public sites through a Cloudflare Tunnel; admin UIs only on Tailscale.
+
+<Callout>
+  This site itself runs on the homelab, in `apps/sites/docs`.
+</Callout>

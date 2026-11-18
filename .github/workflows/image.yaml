@@ -1,0 +1,37 @@
+# Builds ghcr.io/silkepilon/docs on every push to main. The homelab
+# (apps/sites/docs) checks :latest every few minutes and rolls out new builds.
+name: image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/silkepilon/docs:latest
+            ghcr.io/silkepilon/docs:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/SilkePilon/docs
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
